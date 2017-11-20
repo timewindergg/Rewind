@@ -55,7 +55,7 @@ WSGI_APPLICATION = 'rewind.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/1.7/ref/settings/#databases
-'''
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -66,7 +66,6 @@ DATABASES = {
         'PORT': '5432',
     }
 }
-'''
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/
