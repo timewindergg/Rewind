@@ -5,7 +5,10 @@ import os
 import cassiopeia as cass
 from cassiopeia.core import CurrentMatch
 import datetime
+import json
 
+cass.set_riot_api_key(os.environ["RIOT_API_KEY"])
+print(cass.__dict__)
 cass.apply_settings({
   "global": {
     "default_region": None
@@ -13,6 +16,38 @@ cass.apply_settings({
 
   "pipeline": {
     "Cache": {
+      "expirations": {
+          "ChampionStatusData": datetime.timedelta(hours=6),
+          "ChampionStatusListData": datetime.timedelta(hours=6),
+          "Realms": datetime.timedelta(hours=6),
+          "Versions": datetime.timedelta(hours=6),
+          "Champion": datetime.timedelta(days=20),
+          "Rune": datetime.timedelta(days=20),
+          "Item": datetime.timedelta(days=20),
+          "SummonerSpell": datetime.timedelta(days=20),
+          "Map": datetime.timedelta(days=20),
+          "ProfileIcon": datetime.timedelta(days=20),
+          "Locales": datetime.timedelta(days=20),
+          "LanguageStrings": datetime.timedelta(days=20),
+          "SummonerSpells": datetime.timedelta(days=20),
+          "Items": datetime.timedelta(days=20),
+          "Champions": datetime.timedelta(days=20),
+          "Runes": datetime.timedelta(days=20),
+          "Maps": datetime.timedelta(days=20),
+          "ProfileIcons": datetime.timedelta(days=20),
+          "ChampionMastery": datetime.timedelta(days=7),
+          "ChampionMasteries": datetime.timedelta(days=7),
+          "LeagueEntries": datetime.timedelta(hours=6),
+          "League": datetime.timedelta(hours=6),
+          "ChallengerLeague": datetime.timedelta(hours=6),
+          "MasterLeague": datetime.timedelta(hours=6),
+          "Match": datetime.timedelta(days=3),
+          "Timeline": datetime.timedelta(days=1),
+          "Summoner": datetime.timedelta(days=1),
+          "ShardStatus": datetime.timedelta(hours=1),
+          "CurrentMatch": -1,
+          "FeaturedMatches": -1
+      }
     },
 
     "DDragon": {},
@@ -29,8 +64,6 @@ cass.apply_settings({
     "core": "WARNING"
   }
 })
-cass.set_riot_api_key(os.environ["RIOT_API_KEY"])
-cass.set_default_region("NA")
 
 def test(request):
     return JsonResponse([{
@@ -42,11 +75,19 @@ def test(request):
       }], safe=False)
 
 def get_match_timeline(request):
-    #region = request.GET['region']
-    #match_id = request.GET['match_id']
+    region = request.GET['region']
+    match_id = int(request.GET['match_id'])
 
-    s = cass.get_summoner(name="Kalturi")
-    match = cass.get_match(id=33206532)
-    
+    match = cass.get_match(id=match_id, region=region)
+    timeline = match.timeline
+    frames = match.timeline.frames
 
-    return JsonResponse({"name":s.name})
+    #remove duplicate data from cass
+    tl = json.loads(timeline.to_json())
+    frames = tl['frames']
+    for item in frames:
+        participant_frame = item['_participant_frames']['1']
+        item['participant_frame'] = participant_frame
+        del item['_participant_frames']
+
+    return JsonResponse(tl)
