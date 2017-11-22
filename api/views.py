@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
 
 import os
 import cassiopeia as cass
@@ -65,15 +66,27 @@ cass.apply_settings({
   }
 })
 
-def test(request):
-    return JsonResponse([{
-        "id": "1",
-        "username": "samsepi0l"
-      }, {
-        "id": "2",
-        "username": "D0loresH4ze"
-      }], safe=False)
+@require_http_methods(["POST"])
+def update_summoner(request):
+    pass
 
+@require_http_methods(["GET"])
+def get_summoner(request):
+    pass
+
+@require_http_methods(["GET"])
+def get_match_history(request):
+    pass
+
+@require_http_methods(["GET"])
+def get_user_champion_stats(request):
+    pass
+
+@require_http_methods(["GET"])
+def get_current_match(request):
+    pass
+
+@require_http_methods(["GET"])
 def get_match_timeline(request):
     region = request.GET['region']
     match_id = int(request.GET['match_id'])
