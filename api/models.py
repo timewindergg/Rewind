@@ -29,8 +29,8 @@ class ProfileStats(models.Model):
     name = models.CharField(max_length=16)
     last_updated = models.DateField().auto_now
     last_match_updated = models.IntegerField()
-    rank_s8 = models.CharField()
-    rank_s7 = models.CharField()
+    rank_s8 = models.CharField(max_length=25)
+    rank_s7 = models.CharField(max_length=25)
     wins = models.IntegerField()
     losses = models.IntegerField()
     level = models.IntegerField()
@@ -40,12 +40,27 @@ class ProfileStats(models.Model):
         unique_together = (("user_id", "region"),)
 
 
+class Accolades(models.Model):
+    accolade_id = models.IntegerField(primary_key=True)
+    description = models.CharField(max_length=300) 
+
+
+class UserAccolades(models.Model):
+    user_id = models.IntegerField()
+    region = models.CharField(max_length=10)
+    accolade_id = models.IntegerField()
+    accolade_value = models.IntegerField()
+
+    class Meta:
+        unique_together = (("user_id", "region", "accolade_id"),)
+
+
 class Matches(models.Model):
     user_id = models.IntegerField()
     match_id = models.IntegerField()
     region = models.CharField(max_length=10)
     season_id = models.IntegerField()
-    timestamp = = models.DateField()
+    timestamp = models.DateField()
     duration = models.IntegerField()
     item0 = models.IntegerField()
     item1 = models.IntegerField()
@@ -64,11 +79,11 @@ class Matches(models.Model):
     wards_placed = models.IntegerField()
     wards_killed = models.IntegerField()
     vision_wards_bought = models.IntegerField()
-    game_type = models.CharField()
-    red_players = models.CharField()
-    blue_players = models.CharField()
-    accolades = models.CharField()
-    metadata = models.CharField()
+    game_type = models.CharField(max_length=50)
+    red_players = models.CharField(max_length=300)
+    blue_players = models.CharField(max_length=300)
+    accolades = models.TextField()
+    metadata = models.TextField()
 
     class Meta:
         unique_together = (("user_id", "match_id", "region"),)

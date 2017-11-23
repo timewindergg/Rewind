@@ -9,7 +9,6 @@ import datetime
 import json
 
 cass.set_riot_api_key(os.environ["RIOT_API_KEY"])
-print(cass.__dict__)
 cass.apply_settings({
   "global": {
     "default_region": None
