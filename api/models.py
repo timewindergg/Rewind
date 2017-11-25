@@ -27,7 +27,7 @@ class ProfileStats(models.Model):
     user_id = models.IntegerField()
     region = models.CharField(max_length=10)
     name = models.CharField(max_length=16)
-    last_updated = models.DateField().auto_now
+    last_updated = models.DateField(blank=True)
     last_match_updated = models.IntegerField()
     rank_s8 = models.CharField(max_length=25)
     rank_s7 = models.CharField(max_length=25)
@@ -37,7 +37,7 @@ class ProfileStats(models.Model):
     icon = models.IntegerField()
 
     class Meta:
-        unique_together = (("user_id", "region"),)
+        unique_together = (("user_id", "region"), ("name", "region"),)
 
 
 class Accolades(models.Model):

@@ -8,6 +8,9 @@ from cassiopeia.core import CurrentMatch
 import datetime
 import json
 
+from .aggregator.tasks import aggregate_users
+from .models import ProfileStats
+
 cass.set_riot_api_key(os.environ["RIOT_API_KEY"])
 cass.apply_settings({
   "global": {
@@ -67,11 +70,19 @@ cass.apply_settings({
 
 @require_http_methods(["POST"])
 def update_summoner(request):
-    pass
+    summoner_name = request.POST['summoner_name']
+    region = request.POST['region']
+
+    summoner = ProfileStats.objects.get(name=summoner_name, region=region)
+
+    return aggregate_users(summoner.user_id, region)
 
 @require_http_methods(["GET"])
 def get_summoner(request):
-    pass
+    
+    #summoner = ProfileStats.objects.get(name="xxcode", region="NA")
+    aggregate_users.delay("summoner.user_id", "region")
+    return JsonResponse({"name":"oh ya"})
 
 @require_http_methods(["GET"])
 def get_match_history(request):
