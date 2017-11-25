@@ -17,9 +17,8 @@ DB setup:
 
 Must setup rabbitMQ if you want data aggregations to run:
 1. `brew install rabbitMQ`
-2. `python manage.py migrate djcelery`
-3. Start the rabbitMQ server! `sudo rabbitmq-server -detached`
-4. Start a worker! `python manage.py celery worker --verbosity=2 --loglevel=DEBUG`
+3. Start the rabbitMQ server! `rabbitmq-server -detached`
+4. Start a worker! `celery -A rewind worker -l info`
 
 Done!
 
