@@ -1,11 +1,13 @@
 from django.shortcuts import render
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
 
 import os
 import cassiopeia as cass
 from cassiopeia.core import CurrentMatch
 import datetime
+import time
 import json
 
 from .aggregator.tasks import aggregate_users
@@ -68,21 +70,39 @@ cass.apply_settings({
   }
 })
 
+@csrf_exempt
 @require_http_methods(["POST"])
 def update_summoner(request):
     summoner_name = request.POST['summoner_name']
     region = request.POST['region']
 
-    summoner = ProfileStats.objects.get(name=summoner_name, region=region)
+    s = cass.get_summoner(name=summoner_name, region=region)
+    if s.exists:
+        summoner, created = ProfileStats.objects.get_or_create(user_id=s.id, region=s.region.value)
+        summoner.name = s.name
+        summoner.region = s.region.value
+        summoner.last_updated = round(time.time())
+        summoner.icon = s.profile_icon.id
+        summoner.level = s.level
+        summoner.save()
+        aggregate_users.delay(s.id, s.region.value)
+    else:
+        return HttpResponse(status=404)
 
-    return aggregate_users(summoner.user_id, region)
+    return HttpResponse(status=200)
 
 @require_http_methods(["GET"])
 def get_summoner(request):
-    
-    #summoner = ProfileStats.objects.get(name="xxcode", region="NA")
-    aggregate_users.delay("summoner.user_id", "region")
-    return JsonResponse({"name":"oh ya"})
+    summoner_name = request.GET['summoner_name']
+    region = request.GET['region']
+
+    s = cass.get_summoner(name=summoner_name, region=region)
+    if s.exists:
+        summoner = ProfileStats.objects.get(name=summoner_name, region=region)
+    else:
+        return HttpResponse(status=404)
+
+    return JsonResponse(summoner)
 
 @require_http_methods(["GET"])
 def get_match_history(request):
@@ -103,14 +123,7 @@ def get_match_timeline(request):
 
     match = cass.get_match(id=match_id, region=region)
     timeline = match.timeline
-    frames = match.timeline.frames
-
-    #remove duplicate data from cass
+    frames = timeline.frames
     tl = json.loads(timeline.to_json())
-    frames = tl['frames']
-    for item in frames:
-        participant_frame = item['_participant_frames']['1']
-        item['participant_frame'] = participant_frame
-        del item['_participant_frames']
 
     return JsonResponse(tl)

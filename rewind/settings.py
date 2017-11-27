@@ -30,6 +30,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 CELERY_BROKER_URL = 'amqp://localhost'
+CELERY_IMPORTS = ('api.aggregator.tasks',)
 
 INSTALLED_APPS = (
     'django.contrib.admin',

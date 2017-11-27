@@ -4,40 +4,44 @@ from django.db import models
 class UserChampionStats(models.Model):
     user_id = models.IntegerField()
     region = models.CharField(max_length=10)
+    season_id = models.IntegerField()
     champ_id = models.IntegerField()
-    kills = models.IntegerField()
-    deaths = models.IntegerField()
-    assists = models.IntegerField()
-    first_bloods = models.IntegerField()
-    wins = models.IntegerField()
-    losses = models.IntegerField()
-    total_games = models.IntegerField()
-    total_cs = models.IntegerField()
-    total_cs10 = models.IntegerField()
-    total_cs20 = models.IntegerField()
-    total_cs30 = models.IntegerField()
-    game_length = models.IntegerField()
-    pentas = models.IntegerField()
+    kills = models.IntegerField(default=0)
+    deaths = models.IntegerField(default=0)
+    assists = models.IntegerField(default=0)
+    first_bloods = models.IntegerField(default=0)
+    wins = models.IntegerField(default=0)
+    losses = models.IntegerField(default=0)
+    total_games = models.IntegerField(default=0)
+    total_cs = models.IntegerField(default=0)
+    total_cs10 = models.IntegerField(default=0)
+    total_cs20 = models.IntegerField(default=0)
+    total_cs30 = models.IntegerField(default=0)
+    game_length = models.IntegerField(default=0)
+    pentas = models.IntegerField(default=0)
+    quadras = models.IntegerField(default=0)
+    triples = models.IntegerField(default=0)
+    doubles = models.IntegerField(default=0)
 
     class Meta:
-        unique_together = (("user_id", "region", "champ_id"),)
+        unique_together = (("user_id", "region", "season_id", "champ_id"),)
 
 
 class ProfileStats(models.Model):
     user_id = models.IntegerField()
     region = models.CharField(max_length=10)
     name = models.CharField(max_length=16)
-    last_updated = models.DateField(blank=True)
-    last_match_updated = models.IntegerField()
+    last_updated = models.IntegerField(default=0)
+    last_match_updated = models.BigIntegerField(default=0)
     rank_s8 = models.CharField(max_length=25)
     rank_s7 = models.CharField(max_length=25)
-    wins = models.IntegerField()
-    losses = models.IntegerField()
-    level = models.IntegerField()
-    icon = models.IntegerField()
+    wins = models.IntegerField(default=0)
+    losses = models.IntegerField(default=0)
+    level = models.IntegerField(default=0)
+    icon = models.IntegerField(default=0)
 
     class Meta:
-        unique_together = (("user_id", "region"), ("name", "region"),)
+        unique_together = (("user_id", "region"),)
 
 
 class Accolades(models.Model):
@@ -57,10 +61,10 @@ class UserAccolades(models.Model):
 
 class Matches(models.Model):
     user_id = models.IntegerField()
-    match_id = models.IntegerField()
+    match_id = models.BigIntegerField()
     region = models.CharField(max_length=10)
     season_id = models.IntegerField()
-    timestamp = models.DateField()
+    timestamp = models.IntegerField()
     duration = models.IntegerField()
     item0 = models.IntegerField()
     item1 = models.IntegerField()
