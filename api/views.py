@@ -79,13 +79,18 @@ def update_summoner(request):
     s = cass.get_summoner(name=summoner_name, region=region)
     if s.exists:
         summoner, created = ProfileStats.objects.get_or_create(user_id=s.id, region=s.region.value)
+        if created or summoner.last_updated < time.time() - 15*60:
+            summoner.last_updated = round(time.time())
+            aggregate_users.delay(s.id, s.region.value)
         summoner.name = s.name
         summoner.region = s.region.value
-        summoner.last_updated = round(time.time())
         summoner.icon = s.profile_icon.id
         summoner.level = s.level
         summoner.save()
-        aggregate_users.delay(s.id, s.region.value)
+
+        #update leagues, deprecated..
+        #l = cass.get_leagues(summoner=s, region=region)
+
     else:
         return HttpResponse(status=404)
 

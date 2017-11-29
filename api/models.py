@@ -1,6 +1,29 @@
 from django.db import models
 
 
+class ChampionStats(models.Model):
+    champ_id = models.IntegerField()
+    total_games = models.IntegerField()
+
+
+class ChampionItems(models.Model):
+    champ_id = models.IntegerField()
+    item_id = models.IntegerField()
+    occurence = models.IntegerField()
+
+    class Meta:
+        unique_together = (("champ_id", "item_id"),)
+
+
+class ChampionRunes(models.Model):
+    champ_id = models.IntegerField()
+    rune_id = models.IntegerField()
+    occurence = models.IntegerField()
+
+    class Meta:
+        unique_together = (("champ_id", "rune_id"),)
+
+
 class UserChampionStats(models.Model):
     user_id = models.IntegerField()
     region = models.CharField(max_length=10)
@@ -39,6 +62,7 @@ class ProfileStats(models.Model):
     losses = models.IntegerField(default=0)
     level = models.IntegerField(default=0)
     icon = models.IntegerField(default=0)
+    time_played = models.IntegerField(default=0)
 
     class Meta:
         unique_together = (("user_id", "region"),)
@@ -79,11 +103,13 @@ class Matches(models.Model):
     deaths = models.IntegerField()
     assists = models.IntegerField()
     cs = models.IntegerField()
+    gold = models.IntegerField()
     level = models.IntegerField()
     wards_placed = models.IntegerField()
     wards_killed = models.IntegerField()
     vision_wards_bought = models.IntegerField()
     game_type = models.CharField(max_length=50)
+    lane = models.CharField(max_length=50)
     red_players = models.CharField(max_length=300)
     blue_players = models.CharField(max_length=300)
     accolades = models.TextField()
