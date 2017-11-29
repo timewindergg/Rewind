@@ -3,7 +3,6 @@ from celery.contrib import rdb
 
 from api.models import ProfileStats
 import cassiopeia as cass
-import cassiopeia.Queue as Queue
 
 @shared_task()
 def aggregate_users(summoner_id, region):
@@ -27,8 +26,7 @@ def aggregate_users(summoner_id, region):
                 updated = True
                 break
 
-            is_ranked = match.queue == Queue.depreciated_ranked_solo_fives 
-                        or match.queue == Queue.ranked_flex_fives
+            is_ranked = match.queue == cass.Queue.depreciated_ranked_solo_fives or match.queue == cass.Queue.ranked_flex_fives
 
             aggregate_user_match(summoner, match, profile)
             aggregate_global_stats(match)
