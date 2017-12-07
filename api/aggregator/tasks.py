@@ -5,7 +5,7 @@ from api.models import ProfileStats
 import cassiopeia as cass
 
 @shared_task()
-def aggregate_users(summoner_id, region):
+def aggregate_users(summoner_id, region, max_aggregations=-1):
     summoner_id = int(summoner_id)
     profile = ProfileStats.objects.get(user_id=summoner_id, region=region)
     summoner = cass.get_summoner(id=summoner_id, region=region)
@@ -16,11 +16,7 @@ def aggregate_users(summoner_id, region):
 
     while True:
         recent_matches = cass.get_match_history(summoner=summoner, region=region, begin_index=index, end_index=index+100)
-        try:
-            profile.last_match_updated = recent_matches[0].id
-        except: # Player does not have any matches
-            pass
-
+        
         for match in recent_matches:
             if profile.last_match_updated == match.id:
                 updated = True
@@ -28,26 +24,25 @@ def aggregate_users(summoner_id, region):
 
             is_ranked = match.queue == cass.Queue.depreciated_ranked_solo_fives or match.queue == cass.Queue.ranked_flex_fives
 
-            aggregate_user_match(summoner, match, profile)
-            aggregate_global_stats(match)
-
+            if not is_ranked:
+                aggregate_user_match(summoner, match, profile)
+                aggregate_global_stats(match)
             count += 1
             
-        if updated or index > 100:
+        if updated or index > max_aggregations and max_aggregations != -1:
             break
 
         index += 100
 
+    try:
+        profile.last_match_updated = recent_matches[0].id
+    except: # Player does not have any matches
+        pass
     profile.save()
 
     return f"Aggregated {summoner_id}, {region}, {count} matches"
 
 def aggregate_user_match(summoner, match, profile):
-    if match.win:
-        profile.wins += 1
-    else:
-        profile.losses += 1
-
     profile.time_played += match.duration.total_seconds()
 
     for participant in match.participants:
@@ -55,6 +50,11 @@ def aggregate_user_match(summoner, match, profile):
             user = participant
             user_stats = participant.stats._data[cass.core.match.ParticipantStatsData]
             break
+
+    if user.stats.win:
+        profile.wins += 1
+    else:
+        profile.losses += 1
 
     Matches.objects.create(
         user_id=summoner.id,
@@ -86,7 +86,7 @@ def aggregate_user_match(summoner, match, profile):
     )
 
     champion = UserChampionStats.objects.get_or_create(user_id=summoner.id, region=region, champ_id=champion.id)
-    if match.win:
+    if user.stats.win:
         champion.wins += 1
     else:
         champion.losses += 1

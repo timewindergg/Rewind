@@ -10,7 +10,7 @@ import datetime
 import time
 import json
 
-from .aggregator.tasks import aggregate_users
+from .aggregator.tasks import aggregate_users, aggregate_user_match, aggregate_global_stats
 from .models import ProfileStats
 
 cass.set_riot_api_key(os.environ["RIOT_API_KEY"])
@@ -111,15 +111,93 @@ def get_summoner(request):
 
 @require_http_methods(["GET"])
 def get_match_history(request):
-    pass
+    summoner_id = request.GET['summoner_id']
+    region = request.GET['region']
+    offset = request.GET['offset']
+    size = request.GET['size']
+
+    matches = Matches.objects.get(user_id=summoner_id, region=region).order_by('-timestamp')[offset:size]
+
+    return JsonResponse(matches)
+
 
 @require_http_methods(["GET"])
 def get_user_champion_stats(request):
-    pass
+    summoner_name = request.GET['summoner_name']
+    region = request.GET['region']
+
+    try:
+        profile = ProfileStats.objects.get(name=summoner_name, region=region)
+        champ_stats = UserChampionStats.objects.get(user_id=profile.user_id, region=region)
+    except:
+        return JsonResponse(status=404)
+
+    return JsonResponse(champ_stats)
 
 @require_http_methods(["GET"])
 def get_current_match(request):
-    pass
+    summoner_name = request.GET['summoner_name']
+    region = request.GET['region']
+
+    s = cass.get_summoner(name=summoner_name, region=region)
+    if s.exists:
+        m = cass.get_current_match(s, region)
+    else:
+        return HttpResponse(status=404)
+
+    response = {}
+
+    red_team = []
+    blue_team = []
+    for participant in m.red_team:
+        championWinRate = ""
+        totalCs = 
+
+
+    return JsonResponse(m)
+
+@require_http_methods(["GET"])
+def get_current_match_details(request):
+    summoner_name = request.GET['summoner_name']
+    region = request.GET['region']
+    champion_id = request.GET['champion_id']
+
+    s = cass.get_summoner(name=summoner_name, region=region)
+    if s.exists:
+        matchlist = cass.get_match_history(summoner=s, region=region, champion=[champion_id], start_index=0, end_index=20)
+    else
+        return HttpResponse(status=404)
+
+    stats = {
+        "kills": 0,
+        "deaths": 0,
+        "assists": 0,
+        "totalCs": 0,
+        "totalCs10": 0,
+        "totalCs20": 0,
+        "totalCs30": 0,
+        "wins": 0,
+        "losses": 0
+    }
+    for match in matchlist:
+        for participant in match.participants:
+        if participant.summoner.id == summoner.id:
+            user = participant
+            break
+
+        stats["kills"] += user.stats.kills
+        stats["deaths"] += user.stats.deaths
+        stats["assists"] += user.stats.assists
+        stats["totalCs"] += user.stats.total_minions_killed
+
+        if user.stats.win:
+            stats["wins"] += 1
+        else:
+            stats["losses"] += 1
+
+        
+
+    return JsonResponse(json.dumps(stats))
 
 @require_http_methods(["GET"])
 def get_match_timeline(request):
