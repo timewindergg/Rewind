@@ -149,18 +149,41 @@ def get_current_match(request):
 
     red_team = []
     blue_team = []
-    for participant in m.red_team:
-        championWinRate = ""
-        totalCs = 
+    for participant in m.red_team.participants:
+        red_participant = {}
+        red_participant['id'] = participant.summoner.id
+        red_participant['champion_id'] = participant.champion.id
+        red_participant['name'] = participant.summoner.name
+        red_participant['summoner_spell0'] = participant.summoner.summoner_spell_d
+        red_participant['summoner_spell1'] = participant.summoner.summoner_spell_f
+        runes = []
+        for rune in participant.summoner.runes:
+            runes.append(rune.id)
+        red_participant['runes'] = runes
+        red_team.append(red_participant)
+    for participant in m.blue_team.participants:
+        blue_participant = {}
+        blue_participant['id'] = participant.summoner.id
+        blue_participant['champion_id'] = participant.champion.id
+        blue_participant['name'] = participant.summoner.name
+        blue_participant['summoner_spell0'] = participant.summoner.summoner_spell_d
+        blue_participant['summoner_spell1'] = participant.summoner.summoner_spell_f
+        runes = []
+        for rune in participant.summoner.runes:
+            runes.append(rune.id)
+        blue_participant['runes'] = runes
+        blue_team.append(blue_participant)
 
+    response['red_team'] = red_team
+    response['blue_team'] = blue_team
 
-    return JsonResponse(m)
+    return JsonResponse(json.dumps(reponse))
 
 @require_http_methods(["GET"])
 def get_current_match_details(request):
     summoner_name = request.GET['summoner_name']
     region = request.GET['region']
-    champion_id = request.GET['champion_id']
+    champion_id = int(request.GET['champion_id'])
 
     s = cass.get_summoner(name=summoner_name, region=region)
     if s.exists:
@@ -168,6 +191,9 @@ def get_current_match_details(request):
     else
         return HttpResponse(status=404)
 
+    response = {}
+
+    # summoner stats for past 20 matches on a champion
     stats = {
         "kills": 0,
         "deaths": 0,
@@ -195,9 +221,18 @@ def get_current_match_details(request):
         else:
             stats["losses"] += 1
 
-        
+    build = {}
 
-    return JsonResponse(json.dumps(stats))
+    # get recommended build
+    items = ChampionItems.objects.filter(champ_id=champion_id).order_by('-occurence')
+    
+
+
+    
+    response['stats'] = stats
+    response['build'] = build
+
+    return JsonResponse(json.dumps(response))
 
 @require_http_methods(["GET"])
 def get_match_timeline(request):
