@@ -12,6 +12,8 @@ import json
 
 from .aggregator.tasks import aggregate_users, aggregate_user_match, aggregate_global_stats
 from .models import ProfileStats
+import items as Items
+import consts as Consts
 
 cass.set_riot_api_key(os.environ["RIOT_API_KEY"])
 cass.apply_settings({
@@ -79,7 +81,7 @@ def update_summoner(request):
     s = cass.get_summoner(name=summoner_name, region=region)
     if s.exists:
         summoner, created = ProfileStats.objects.get_or_create(user_id=s.id, region=s.region.value)
-        if created or summoner.last_updated < time.time() - 15*60:
+        if created or summoner.last_updated < time.time() - Consts.SECONDS_BETWEEN_UPDATES:
             summoner.last_updated = round(time.time())
             aggregate_users.delay(s.id, s.region.value)
         summoner.name = s.name
@@ -205,6 +207,8 @@ def get_current_match_details(request):
         "wins": 0,
         "losses": 0
     }
+    match_history = []
+
     for match in matchlist:
         for participant in match.participants:
         if participant.summoner.id == summoner.id:
@@ -218,17 +222,24 @@ def get_current_match_details(request):
 
         if user.stats.win:
             stats["wins"] += 1
+            match_history.append(1)
         else:
             stats["losses"] += 1
+            match_history.append(0)
 
     build = {}
 
     # get recommended build
     items = ChampionItems.objects.filter(champ_id=champion_id).order_by('-occurence')
     
-
-
+    boots = [item for item in items if item.item_type == Consts.ITEM_BOOTS]
+    core = [item for item in items if item.item_type == Consts.ITEM_CORE][:3]
+    situational = core[:3]
     
+    build['boots'] = boots
+    build['core'] = core
+    build['situation'] = situational
+
     response['stats'] = stats
     response['build'] = build
 
