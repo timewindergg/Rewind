@@ -12,8 +12,8 @@ import json
 
 from .aggregator.tasks import aggregate_users, aggregate_user_match, aggregate_global_stats
 from .models import ProfileStats
-import items as Items
-import consts as Consts
+from . import items as Items
+from . import consts as Consts
 
 cass.set_riot_api_key(os.environ["RIOT_API_KEY"])
 cass.apply_settings({
@@ -81,9 +81,9 @@ def update_summoner(request):
     s = cass.get_summoner(name=summoner_name, region=region)
     if s.exists:
         summoner, created = ProfileStats.objects.get_or_create(user_id=s.id, region=s.region.value)
-        if created or summoner.last_updated < time.time() - Consts.SECONDS_BETWEEN_UPDATES:
-            summoner.last_updated = round(time.time())
-            aggregate_users.delay(s.id, s.region.value)
+        #if created or summoner.last_updated < time.time() - Consts.SECONDS_BETWEEN_UPDATES:
+        summoner.last_updated = round(time.time())
+        aggregate_users.delay(s.id, s.region.value)
         summoner.name = s.name
         summoner.region = s.region.value
         summoner.icon = s.profile_icon.id
@@ -190,7 +190,7 @@ def get_current_match_details(request):
     s = cass.get_summoner(name=summoner_name, region=region)
     if s.exists:
         matchlist = cass.get_match_history(summoner=s, region=region, champion=[champion_id], start_index=0, end_index=20)
-    else
+    else:
         return HttpResponse(status=404)
 
     response = {}
@@ -211,9 +211,9 @@ def get_current_match_details(request):
 
     for match in matchlist:
         for participant in match.participants:
-        if participant.summoner.id == summoner.id:
-            user = participant
-            break
+            if participant.summoner.id == summoner.id:
+                user = participant
+                break
 
         stats["kills"] += user.stats.kills
         stats["deaths"] += user.stats.deaths

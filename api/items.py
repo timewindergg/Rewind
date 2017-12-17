@@ -85,12 +85,14 @@ boots = [
     3020  # Sorcerer's
 ]
 
-import consts as Consts
-for item in full_items:
-    Items.objects.get_or_create(item_id=item, item_type=Consts.ITEM_CORE)
+def update_items():
+    from . import consts as Consts
+    from .models import Items
+    for item in full_items:
+        Items.objects.get_or_create(item_id=item, item_type=Consts.ITEM_CORE)
 
-for boot in boots:
-    Items.objects.get_or_create(item_id=item, item_type=Consts.ITEM_BOOTS)
+    for boot in boots:
+        Items.objects.get_or_create(item_id=item, item_type=Consts.ITEM_BOOTS)
 
 
 

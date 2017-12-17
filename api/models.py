@@ -13,7 +13,7 @@ class ChampionStats(models.Model):
 class ChampionItems(models.Model):
     champ_id = models.IntegerField()
     item_id = models.IntegerField()
-    occurence = models.IntegerField()
+    occurence = models.IntegerField(default=0)
 
     class Meta:
         unique_together = (("champ_id", "item_id"),)
@@ -22,7 +22,7 @@ class ChampionItems(models.Model):
 class ChampionRunes(models.Model):
     champ_id = models.IntegerField()
     rune_id = models.IntegerField()
-    occurence = models.IntegerField()
+    occurence = models.IntegerField(default=0)
 
     class Meta:
         unique_together = (("champ_id", "rune_id"),)
@@ -92,8 +92,10 @@ class Matches(models.Model):
     match_id = models.BigIntegerField()
     region = models.CharField(max_length=10)
     season_id = models.IntegerField(default=0)
+    queue_id = models.IntegerField(default=0)
     timestamp = models.IntegerField(default=0)
     duration = models.IntegerField(default=0)
+    champion_id = models.IntegerField(default=0)
     item0 = models.IntegerField(default=0)
     item1 = models.IntegerField(default=0)
     item2 = models.IntegerField(default=0)
@@ -114,8 +116,11 @@ class Matches(models.Model):
     vision_wards_bought = models.IntegerField(default=0)
     game_type = models.CharField(max_length=50)
     lane = models.CharField(max_length=50)
-    red_players = models.CharField(max_length=300)
-    blue_players = models.CharField(max_length=300)
+    role = models.CharField(max_length=50, null=True)
+    winner = models.IntegerField(default=0)
+    is_remake = models.BooleanField(default=False)
+    red_team = models.CharField(max_length=300)
+    blue_team = models.CharField(max_length=300)
     accolades = models.TextField()
     metadata = models.TextField()
 
