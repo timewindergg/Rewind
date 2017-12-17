@@ -11,9 +11,11 @@ import time
 import json
 
 from .aggregator.tasks import aggregate_users, aggregate_user_match, aggregate_global_stats
-from .models import ProfileStats
+from .models import ProfileStats, ChampionItems
 from . import items as Items
 from . import consts as Consts
+
+import pdb
 
 cass.set_riot_api_key(os.environ["RIOT_API_KEY"])
 cass.apply_settings({
@@ -83,7 +85,7 @@ def update_summoner(request):
         summoner, created = ProfileStats.objects.get_or_create(user_id=s.id, region=s.region.value)
         #if created or summoner.last_updated < time.time() - Consts.SECONDS_BETWEEN_UPDATES:
         summoner.last_updated = round(time.time())
-        aggregate_users.delay(s.id, s.region.value)
+        aggregate_users.delay(s.id, s.region.value, 1000)
         summoner.name = s.name
         summoner.region = s.region.value
         summoner.icon = s.profile_icon.id
@@ -118,7 +120,10 @@ def get_match_history(request):
     offset = request.GET['offset']
     size = request.GET['size']
 
-    matches = Matches.objects.get(user_id=summoner_id, region=region).order_by('-timestamp')[offset:size]
+    try:
+        matches = Matches.objects.get(user_id=summoner_id, region=region).order_by('-timestamp')[offset:size]
+    except:
+        return HttpResponse(status=404)
 
     return JsonResponse(matches)
 
@@ -143,7 +148,7 @@ def get_current_match(request):
 
     s = cass.get_summoner(name=summoner_name, region=region)
     if s.exists:
-        m = cass.get_current_match(s, region)
+        m = cass.get_current_match(summoner=s, region=region)
     else:
         return HttpResponse(status=404)
 
@@ -179,7 +184,7 @@ def get_current_match(request):
     response['red_team'] = red_team
     response['blue_team'] = blue_team
 
-    return JsonResponse(json.dumps(reponse))
+    return JsonResponse(reponse)
 
 @require_http_methods(["GET"])
 def get_current_match_details(request):
@@ -189,7 +194,7 @@ def get_current_match_details(request):
 
     s = cass.get_summoner(name=summoner_name, region=region)
     if s.exists:
-        matchlist = cass.get_match_history(summoner=s, region=region, champion=[champion_id], start_index=0, end_index=20)
+        matchlist = cass.get_match_history(summoner=s, region=region, champions=[champion_id], begin_index=0, end_index=20)
     else:
         return HttpResponse(status=404)
 
@@ -211,7 +216,7 @@ def get_current_match_details(request):
 
     for match in matchlist:
         for participant in match.participants:
-            if participant.summoner.id == summoner.id:
+            if participant.summoner.id == s.id and hasattr(participant, "timeline"):
                 user = participant
                 break
 
@@ -230,9 +235,11 @@ def get_current_match_details(request):
     build = {}
 
     # get recommended build
+    # fix this!
+    item_data = Items.objects.all()
     items = ChampionItems.objects.filter(champ_id=champion_id).order_by('-occurence')
     
-    boots = [item for item in items if item.item_type == Consts.ITEM_BOOTS]
+    boots = [item for item in items if item_data.item_type == Consts.ITEM_BOOTS]
     core = [item for item in items if item.item_type == Consts.ITEM_CORE][:3]
     situational = core[:3]
     
@@ -243,7 +250,7 @@ def get_current_match_details(request):
     response['stats'] = stats
     response['build'] = build
 
-    return JsonResponse(json.dumps(response))
+    return JsonResponse(response)
 
 @require_http_methods(["GET"])
 def get_match_timeline(request):
