@@ -14,7 +14,6 @@ class ChampionItems(models.Model):
     champ_id = models.IntegerField()
     item_id = models.IntegerField()
     occurence = models.IntegerField(default=0)
-    #item_type = models.ForeignKey(Items.item_type, default=-1)
 
     class Meta:
         unique_together = (("champ_id", "item_id"),)

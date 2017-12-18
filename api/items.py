@@ -92,7 +92,7 @@ def update_items():
         Items.objects.get_or_create(item_id=item, item_type=Consts.ITEM_CORE)
 
     for boot in boots:
-        Items.objects.get_or_create(item_id=item, item_type=Consts.ITEM_BOOTS)
+        Items.objects.get_or_create(item_id=boot, item_type=Consts.ITEM_BOOTS)
 
 
 

@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
+from django.forms.models import model_to_dict
 
 import os
 import cassiopeia as cass
@@ -11,7 +12,7 @@ import time
 import json
 
 from .aggregator.tasks import aggregate_users, aggregate_user_match, aggregate_global_stats
-from .models import ProfileStats, ChampionItems
+from .models import ProfileStats, ChampionItems, UserChampionStats, Matches
 from . import items as Items
 from . import consts as Consts
 
@@ -105,27 +106,30 @@ def get_summoner(request):
     summoner_name = request.GET['summoner_name']
     region = request.GET['region']
 
-    s = cass.get_summoner(name=summoner_name, region=region)
-    if s.exists:
-        summoner = ProfileStats.objects.get(name=summoner_name, region=region)
-    else:
-        return HttpResponse(status=404)
-
-    return JsonResponse(summoner)
-
-@require_http_methods(["GET"])
-def get_match_history(request):
-    summoner_id = request.GET['summoner_id']
-    region = request.GET['region']
-    offset = request.GET['offset']
-    size = request.GET['size']
-
     try:
-        matches = Matches.objects.get(user_id=summoner_id, region=region).order_by('-timestamp')[offset:size]
+        summoner = ProfileStats.objects.get(name=summoner_name, region=region)
     except:
         return HttpResponse(status=404)
 
-    return JsonResponse(matches)
+    response = model_to_dict(summoner)
+
+    return JsonResponse(response)
+
+@require_http_methods(["GET"])
+def get_match_history(request):
+    summoner_id = int(request.GET['summoner_id'])
+    region = request.GET['region']
+    offset = int(request.GET['offset'])
+    size = int(request.GET['size'])
+    
+    try:
+        matches = Matches.objects.filter(user_id=summoner_id, region=region).order_by('-timestamp')[offset:size]
+    except:
+        return HttpResponse(status=404)
+
+    response = list(matches.values())
+
+    return JsonResponse(response, safe=False)
 
 
 @require_http_methods(["GET"])
@@ -135,11 +139,13 @@ def get_user_champion_stats(request):
 
     try:
         profile = ProfileStats.objects.get(name=summoner_name, region=region)
-        champ_stats = UserChampionStats.objects.get(user_id=profile.user_id, region=region)
     except:
-        return JsonResponse(status=404)
+        return HttpResponse(status=404)
 
-    return JsonResponse(champ_stats)
+    champ_stats = UserChampionStats.objects.filter(user_id=profile.user_id, region=region)
+    response = list(champ_stats.values())
+
+    return JsonResponse(response, safe=False)
 
 @require_http_methods(["GET"])
 def get_current_match(request):
@@ -147,44 +153,38 @@ def get_current_match(request):
     region = request.GET['region']
 
     s = cass.get_summoner(name=summoner_name, region=region)
-    if s.exists:
+    if not s.exists:
+        return HttpResponse(status=404)
+
+    try:
         m = cass.get_current_match(summoner=s, region=region)
-    else:
+    except:
         return HttpResponse(status=404)
 
     response = {}
 
     red_team = []
     blue_team = []
-    for participant in m.red_team.participants:
-        red_participant = {}
-        red_participant['id'] = participant.summoner.id
-        red_participant['champion_id'] = participant.champion.id
-        red_participant['name'] = participant.summoner.name
-        red_participant['summoner_spell0'] = participant.summoner.summoner_spell_d
-        red_participant['summoner_spell1'] = participant.summoner.summoner_spell_f
+    for participant in m.participants:
+        p = {}
+        p['id'] = participant.summoner.id
+        p['champion_id'] = participant.champion.id
+        p['name'] = participant.summoner.name
+        p['summoner_spell0'] = participant.summoner_spell_d.id
+        p['summoner_spell1'] = participant.summoner_spell_f.id
         runes = []
-        for rune in participant.summoner.runes:
+        for rune in participant.runes:
             runes.append(rune.id)
-        red_participant['runes'] = runes
-        red_team.append(red_participant)
-    for participant in m.blue_team.participants:
-        blue_participant = {}
-        blue_participant['id'] = participant.summoner.id
-        blue_participant['champion_id'] = participant.champion.id
-        blue_participant['name'] = participant.summoner.name
-        blue_participant['summoner_spell0'] = participant.summoner.summoner_spell_d
-        blue_participant['summoner_spell1'] = participant.summoner.summoner_spell_f
-        runes = []
-        for rune in participant.summoner.runes:
-            runes.append(rune.id)
-        blue_participant['runes'] = runes
-        blue_team.append(blue_participant)
+        p['runes'] = runes
+        if participant.side.value == 100:
+            blue_team.append(p)
+        elif participant.side.value == 200:
+            red_team.append(p)
 
     response['red_team'] = red_team
     response['blue_team'] = blue_team
 
-    return JsonResponse(reponse)
+    return JsonResponse(response)
 
 @require_http_methods(["GET"])
 def get_current_match_details(request):
@@ -235,17 +235,20 @@ def get_current_match_details(request):
     build = {}
 
     # get recommended build
-    # fix this!
-    item_data = Items.objects.all()
-    items = ChampionItems.objects.filter(champ_id=champion_id).order_by('-occurence')
-    
-    boots = [item for item in items if item_data.item_type == Consts.ITEM_BOOTS]
-    core = [item for item in items if item.item_type == Consts.ITEM_CORE][:3]
-    situational = core[:3]
+    try:
+        items = ChampionItems.objects.raw('SELECT * FROM api_championitems ci INNER JOIN api_items i ON ci.item_id = i.item_id WHERE ci.champ_id = %s ORDER BY ci.occurence DESC' % champion_id)
+        boots = [item.item_id for item in items if item.item_type == Consts.ITEM_BOOTS]
+        all_items = [item.item_id for item in items if item.item_type == Consts.ITEM_CORE]
+        core = all_items[:3]
+        situational = all_items[3:8]
+    except:
+        boots = []
+        core = []
+        situational = []
     
     build['boots'] = boots
     build['core'] = core
-    build['situation'] = situational
+    build['situational'] = situational
 
     response['stats'] = stats
     response['build'] = build
