@@ -1,5 +1,10 @@
 Timewinder Rewind
 
+TODO:
+- Batch async api calls
+- URL sethod specification refactor
+- Include timeline stats in aggregations (Results in 2x API calls and processing time, check performance scalability)
+
 Setup:
 1. Create a new virtual env (virtualenv, anaconda) with python3.6
 2. `pip install -r requirements.txt`
@@ -8,12 +13,14 @@ Setup:
 4. Write `export RIOT_API_KEY=<key>` to .bash_profile 
 
 DB setup:
-1. Install postgres 10 with brew `brew install postgresql`. Read postgres docs for instructions on how to start it up.
+1. Install postgres 10 with `brew install postgresql`. Read postgres docs for instructions on how to start it up.
 2. in postgres shell, 
-`CREATE DATABASE timewinder;`
-`CREATE USER timewinder_admin WITH PASSWORD 'twnumba1';`
-`GRANT ALL PRIVILEGES ON DATABASE timewinder TO timewinder_admin;`
-3. `./manage.py migrate` to apply migrations
+```
+	CREATE DATABASE timewinder;
+	CREATE USER timewinder_admin WITH PASSWORD 'twnumba1';
+	GRANT ALL PRIVILEGES ON DATABASE timewinder TO timewinder_admin;
+```
+3. Run `./manage.py migrate` to apply migrations
 
 Must setup rabbitMQ if you want data aggregations to run:
 1. `brew install rabbitMQ`
