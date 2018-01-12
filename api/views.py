@@ -75,6 +75,17 @@ cass.apply_settings({
   }
 })
 
+@require_http_methods(["GET"])
+def get_version(request):
+    response = {}
+
+    try:
+        response['version'] = cass.get_version()
+    except:
+        return HttpResponse(status=500)
+        
+    return JsonResponse(response)
+
 @csrf_exempt
 @require_http_methods(["POST"])
 def update_summoner(request):
@@ -84,22 +95,23 @@ def update_summoner(request):
     s = cass.get_summoner(name=summoner_name, region=region)
     if s.exists:
         summoner, created = ProfileStats.objects.get_or_create(user_id=s.id, region=s.region.value)
-        #if created or summoner.last_updated < time.time() - Consts.SECONDS_BETWEEN_UPDATES:
-        summoner.last_updated = round(time.time())
-        aggregate_users.delay(s.id, s.region.value, 1000)
-        summoner.name = s.name
-        summoner.region = s.region.value
-        summoner.icon = s.profile_icon.id
-        summoner.level = s.level
-        summoner.save()
+        if created or summoner.last_updated < time.time() - Consts.SECONDS_BETWEEN_UPDATES:
+            summoner.last_updated = round(time.time())
+            aggregate_users.delay(s.id, s.region.value, 100)
+            summoner.name = s.name
+            summoner.region = s.region.value
+            summoner.icon = s.profile_icon.id
+            summoner.level = s.level
+            summoner.save()
 
-        #update leagues, deprecated..
-        #l = cass.get_leagues(summoner=s, region=region)
+            #update leagues, deprecated..
+            #l = cass.get_leagues(summoner=s, region=region)
 
     else:
         return HttpResponse(status=404)
 
     return HttpResponse(status=200)
+
 
 @require_http_methods(["GET"])
 def get_summoner(request):
@@ -114,6 +126,7 @@ def get_summoner(request):
     response = model_to_dict(summoner)
 
     return JsonResponse(response)
+
 
 @require_http_methods(["GET"])
 def get_match_history(request):
