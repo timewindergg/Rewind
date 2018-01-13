@@ -21,7 +21,7 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
     count = 0
 
     while True:
-        if updated or index > max_aggregations and max_aggregations > 0:
+        if updated or index >= max_aggregations and max_aggregations > 0:
             break
 
         recent_matches = cass.get_match_history(summoner=summoner, region=region, begin_index=index, end_index=index+100)
@@ -50,18 +50,18 @@ def aggregate_user_match(region, summoner_id, match_id):
     match = cass.get_match(id=match_id, region=region)
 
     try: # match.queue will call riot api
-        is_ranked = match.queue == cass.Queue.depreciated_ranked_solo_fives or match.queue == cass.Queue.ranked_flex_fives
+        is_ranked = match.queue == cass.Queue.ranked_solo_fives or match.queue == cass.Queue.ranked_flex_fives or match.queue == cass.Queue.ranked_flex_threes
     except:
+        print("Error checking is_ranked in aggregate_user_match")
         is_ranked = False
+
+    if is_ranked:
+        aggregate_global_stats(match=match)
+    else:
+        return
 
     with transaction.atomic():
         profile = ProfileStats.objects.select_for_update().get(user_id=summoner_id, region=region)
-        
-        if is_ranked:
-            aggregate_global_stats(match=match)
-        else:
-            return
-
         profile.time_played += match.duration.total_seconds()
 
         for participant in match.participants:
@@ -157,14 +157,16 @@ def aggregate_global_stats(match):
         champ_id = participant.champion.id
         for item in participant.stats.items:
             if item:
-                champ_item, created = ChampionItems.objects.select_for_update().get_or_create(champ_id=champ_id, item_id=item.id)
-                champ_item.occurence += 1
-                champ_item.save()
+                with transaction.atomic():
+                    champ_item, created = ChampionItems.objects.select_for_update().get_or_create(champ_id=champ_id, item_id=item.id)
+                    champ_item.occurence += 1
+                    champ_item.save()
         try: # Legacy runes will break this. Cassiopeia only supports runes reforged atm.
             for rune in participant.runes:
-                champ_rune, created = ChampionRunes.objects.select_for_update().get_or_create(champ_id=champ_id, rune_id=rune[0].id)
-                champ_rune.occurence += 1
-                champ_rune.save()
+                with transaction.atomic():
+                    champ_rune, created = ChampionRunes.objects.select_for_update().get_or_create(champ_id=champ_id, rune_id=rune[0].id)
+                    champ_rune.occurence += 1
+                    champ_rune.save()
         except:
             pass
 

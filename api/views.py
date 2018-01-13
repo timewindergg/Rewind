@@ -3,6 +3,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.forms.models import model_to_dict
+from django.db import transaction
 
 import os
 import cassiopeia as cass
@@ -12,7 +13,7 @@ import time
 import json
 
 from .aggregator.tasks import aggregate_users, aggregate_user_match, aggregate_global_stats
-from .models import ProfileStats, ChampionItems, UserChampionStats, Matches
+from .models import ProfileStats, ChampionItems, UserChampionStats, Matches, UserLeagues, UserChampionMasteries
 from . import items as Items
 from . import consts as Consts
 
@@ -86,6 +87,43 @@ def get_version(request):
         
     return JsonResponse(response)
 
+
+def update_summoner_helper(s, region):
+    update = False
+
+    with transaction.atomic():
+        summoner, created = ProfileStats.objects.select_for_update().get_or_create(user_id=s.id, region=s.region.value)
+        if created or summoner.last_updated < time.time() - Consts.SECONDS_BETWEEN_UPDATES:
+            update = True
+            summoner.last_updated = round(time.time())
+            summoner.name = s.name
+            summoner.region = s.region.value
+            summoner.icon = s.profile_icon.id
+            summoner.level = s.level
+            summoner.save()
+
+            leagues = cass.get_league_positions(summoner=s, region=region)
+            for league in leagues:
+                user_league, created = UserLeagues.objects.select_for_update().get_or_create(user_id=s.id, region=s.region.value, queue=league.queue.value)
+                user_league.tier = league.tier.value
+                user_league.division = league.division.value
+                user_league.points = league.league_points
+                user_league.save()
+
+            cmasteries = cass.get_champion_masteries(summoner=s, region=region)
+            for cmastery in cmasteries:
+                user_champion, created = UserChampionMasteries.objects.select_for_update().get_or_create(user_id=s.id, region=region, champ_id=cmastery.champion.id)
+                user_champion.level = cmastery.level
+                user_champion.total_points = cmastery.points
+                user_champion.points_since_last = cmastery.points_since_last_level
+                user_champion.points_to_next = cmastery.points_until_next_level
+                user_champion.chest_granted = cmastery.chest_granted
+                user_champion.save()
+
+    if update:
+        aggregate_users.delay(s.id, s.region.value, 5)
+
+
 @csrf_exempt
 @require_http_methods(["POST"])
 def update_summoner(request):
@@ -94,19 +132,7 @@ def update_summoner(request):
 
     s = cass.get_summoner(name=summoner_name, region=region)
     if s.exists:
-        summoner, created = ProfileStats.objects.get_or_create(user_id=s.id, region=s.region.value)
-        if created or summoner.last_updated < time.time() - Consts.SECONDS_BETWEEN_UPDATES:
-            summoner.last_updated = round(time.time())
-            aggregate_users.delay(s.id, s.region.value, 100)
-            summoner.name = s.name
-            summoner.region = s.region.value
-            summoner.icon = s.profile_icon.id
-            summoner.level = s.level
-            summoner.save()
-
-            #update leagues, deprecated..
-            #l = cass.get_leagues(summoner=s, region=region)
-
+        update_summoner_helper(s, region)
     else:
         return HttpResponse(status=404)
 
@@ -118,12 +144,30 @@ def get_summoner(request):
     summoner_name = request.GET['summoner_name']
     region = request.GET['region']
 
+    s = cass.get_summoner(name=summoner_name, region=region)
+    if not s.exists:
+        return HttpResponse(status=404)
+
+    #update_summoner_helper(s, region)
+
     try:
-        summoner = ProfileStats.objects.get(name=summoner_name, region=region)
+        summoner = ProfileStats.objects.get(user_id=s.id, region=region)
     except:
         return HttpResponse(status=404)
 
+    try:
+        cmasteries = UserChampionMasteries.objects.filter(user_id=s.id, region=region).order_by('-total_points')[:3]
+    except:
+        return HttpResponse(status=500)
+
+    try:
+        userLeagues = UserLeagues.objects.filter(user_id=s.id, region=region)
+    except:
+        return HttpResponse(status=500)
+
     response = model_to_dict(summoner)
+    response['championMasteries'] = list(cmasteries.values())
+    response['leagues'] = list(userLeagues.values())
 
     return JsonResponse(response)
 

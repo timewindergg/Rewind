@@ -1,8 +1,7 @@
 Timewinder Rewind
 
 TODO:
-- Batch async api calls
-- URL sethod specification refactor
+- URL method specification refactor
 - Include timeline stats in aggregations (Results in 2x API calls and processing time, check performance scalability)
 
 Setup:
@@ -13,7 +12,7 @@ Setup:
 4. Write `export RIOT_API_KEY=<key>` to .bash_profile 
 
 DB setup:
-1. Install postgres 10 with `brew install postgresql`. Read postgres docs for instructions on how to start it up.
+1. Install postgres 10 with `brew install postgresql`. Read postgres docs for instructions on how to start it up. You may(really) want to alias the commands for starting up and shutting down the psql server.
 2. in postgres shell, 
 ```
 	CREATE DATABASE timewinder;
@@ -22,10 +21,18 @@ DB setup:
 ```
 3. Run `./manage.py migrate` to apply migrations
 
-Must setup rabbitMQ if you want data aggregations to run:
+RabbitMQ setup:
 1. `brew install rabbitMQ`
-3. Start the rabbitMQ server! `rabbitmq-server -detached`
-4. Start a worker! `celery -A rewind worker -l info`
+2. Start the rabbitMQ server! `sudo rabbitmq-server`
+3. Start a worker! `celery -A rewind worker -l warning`
+
+Import static data:
+1. start django shell: `./manage.py shell`
+2. in django shell:
+```
+    import api.items
+    api.items.update_items()
+```
 
 Done!
 

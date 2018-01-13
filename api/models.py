@@ -28,6 +28,20 @@ class ChampionRunes(models.Model):
         unique_together = (("champ_id", "rune_id"),)
 
 
+class UserChampionMasteries(models.Model):
+    user_id = models.IntegerField()
+    region = models.CharField(max_length=10)
+    champ_id = models.IntegerField()
+    level = models.IntegerField(default=0)
+    total_points = models.IntegerField(default=0)
+    points_since_last = models.IntegerField(default=0)
+    points_to_next = models.IntegerField(default=0)
+    chest_granted = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = (("user_id", "region", "champ_id"),)
+        
+
 class UserChampionStats(models.Model):
     user_id = models.IntegerField()
     region = models.CharField(max_length=10)
@@ -52,6 +66,18 @@ class UserChampionStats(models.Model):
 
     class Meta:
         unique_together = (("user_id", "region", "season_id", "champ_id"),)
+
+
+class UserLeagues(models.Model):
+    user_id = models.IntegerField()
+    region = models.CharField(max_length=10)
+    queue = models.CharField(max_length=30)
+    tier = models.CharField(max_length=20)
+    division = models.CharField(max_length=10)
+    points = models.IntegerField(default=0)
+
+    class Meta:
+        unique_together = (("user_id", "region", "queue"),)
 
 
 class ProfileStats(models.Model):
