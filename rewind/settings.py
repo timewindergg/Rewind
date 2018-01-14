@@ -27,6 +27,43 @@ TEMPLATE_DEBUG = True
 ALLOWED_HOSTS = []
 
 
+# Logging
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
+        'standard': {
+            'format' : "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
+            'datefmt' : "%d/%b/%Y %H:%M:%S"
+        }
+    },
+    'handlers': {
+        'logfile': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': 'logs/error.log',
+            'maxBytes': 50000,
+            'backupCount': 2,
+            'formatter': 'standard'
+        },
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'standard'
+        }
+    },
+    'loggers': {
+        'api': {
+            'handlers': ['console', 'logfile'],
+            'level': 'WARN'
+        }
+    }
+}
+
+
 # Application definition
 
 CELERY_BROKER_URL = 'amqp://localhost'

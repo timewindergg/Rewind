@@ -17,7 +17,8 @@ from .models import ProfileStats, ChampionItems, UserChampionStats, Matches, Use
 from . import items as Items
 from . import consts as Consts
 
-import pdb
+import logging
+log = logging.getLogger(__name__)
 
 cass.set_riot_api_key(os.environ["RIOT_API_KEY"])
 cass.apply_settings({
@@ -146,24 +147,27 @@ def get_summoner(request):
 
     s = cass.get_summoner(name=summoner_name, region=region)
     if not s.exists:
-        return HttpResponse(status=404)
+        return HttpResponse('Summoner does not exist', status=404)
 
-    #update_summoner_helper(s, region)
+    update_summoner_helper(s, region)
 
     try:
         summoner = ProfileStats.objects.get(user_id=s.id, region=region)
     except:
-        return HttpResponse(status=404)
+        log.warn("ProfileStats not found after update in get_summoner")
+        return HttpResponse("Error retrieving profile stats", status=500)
 
     try:
         cmasteries = UserChampionMasteries.objects.filter(user_id=s.id, region=region).order_by('-total_points')[:3]
     except:
-        return HttpResponse(status=500)
+        log.warn("UserChampionMasteries not found after update in get_summoner")
+        return HttpResponse("Error retrieving champion masteries", status=500)
 
     try:
         userLeagues = UserLeagues.objects.filter(user_id=s.id, region=region)
     except:
-        return HttpResponse(status=500)
+        log.warn("ProfileStats not found after update in get_summoner")
+        return HttpResponse("Error retrieving leagues", status=500)
 
     response = model_to_dict(summoner)
     response['championMasteries'] = list(cmasteries.values())
@@ -194,12 +198,14 @@ def get_user_champion_stats(request):
     summoner_name = request.GET['summoner_name']
     region = request.GET['region']
 
+    s = cass.get_summoner(name=summoner_name, region=region)
+
     try:
-        profile = ProfileStats.objects.get(name=summoner_name, region=region)
+        profile = ProfileStats.objects.get(user_id=s.id, region=region)
     except:
         return HttpResponse(status=404)
 
-    champ_stats = UserChampionStats.objects.filter(user_id=profile.user_id, region=region)
+    champ_stats = UserChampionStats.objects.filter(user_id=s.id, region=region)
     response = list(champ_stats.values())
 
     return JsonResponse(response, safe=False)
