@@ -9,6 +9,9 @@ from cassiopeia import data
 
 import json
 
+import logging
+log = logging.getLogger(__name__)
+
 @shared_task()
 def aggregate_users(summoner_id, region, max_aggregations=-1):
     summoner_id = int(summoner_id)
@@ -52,7 +55,7 @@ def aggregate_user_match(region, summoner_id, match_id):
     try: # match.queue will call riot api
         is_ranked = match.queue == cass.Queue.ranked_solo_fives or match.queue == cass.Queue.ranked_flex_fives or match.queue == cass.Queue.ranked_flex_threes
     except:
-        print("Error checking is_ranked in aggregate_user_match")
+        log.warn("Error checking is_ranked in aggregate_user_match")
         is_ranked = False
 
     if is_ranked:

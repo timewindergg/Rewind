@@ -79,11 +79,13 @@ cass.apply_settings({
 
 @require_http_methods(["GET"])
 def get_version(request):
-    response = {}
+    region = request.GET['region']
 
+    response = {}
     try:
-        response['version'] = cass.get_version()
+        response['version'] = cass.get_version(region=region)
     except:
+        log.warn("failed to get version", stack_info=True)
         return HttpResponse(status=500)
         
     return JsonResponse(response)
