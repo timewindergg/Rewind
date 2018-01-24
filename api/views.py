@@ -187,7 +187,7 @@ def get_summoner(request):
 
 @require_http_methods(["GET"])
 def get_match_history(request):
-    summoner_name = int(request.GET['summoner_name'])
+    summoner_name = request.GET['summoner_name']
     region = normalize_region(request.GET['region'])
     offset = int(request.GET['offset'])
     size = int(request.GET['size'])
