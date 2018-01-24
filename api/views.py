@@ -82,7 +82,7 @@ def normalize_region(region):
         return region.upper()
     except:
         return region
-        
+
 
 @require_http_methods(["GET"])
 def get_version(request):
@@ -187,13 +187,17 @@ def get_summoner(request):
 
 @require_http_methods(["GET"])
 def get_match_history(request):
-    summoner_id = int(request.GET['summoner_id'])
+    summoner_name = int(request.GET['summoner_name'])
     region = normalize_region(request.GET['region'])
     offset = int(request.GET['offset'])
     size = int(request.GET['size'])
-    
+
+    summoner = cass.get_summoner(name=summoner_name)
+    if not s.exists:
+        return HttpResponse('Summoenr does not exist', status=404)
+
     try:
-        matches = Matches.objects.filter(user_id=summoner_id, region=region).order_by('-timestamp')[offset:size]
+        matches = Matches.objects.filter(user_id=summoner.id, region=region).order_by('-timestamp')[offset:size]
     except:
         return HttpResponse(status=404)
 
@@ -332,9 +336,11 @@ def get_match_timeline(request):
     region = normalize_region(request.GET['region'])
     match_id = int(request.GET['match_id'])
 
-    match = cass.get_match(id=match_id, region=region)
-    timeline = match.timeline
-    frames = timeline.frames
-    tl = json.loads(timeline.to_json())
+    match = cass.get_match(id=match_id, region=region).load()
+    timeline = match.timeline.load()
 
-    return JsonResponse(tl)
+    response = {}
+    response['timeline'] = json.loads(timeline.to_json())
+    response['match'] = json.loads(match.to_json())
+    
+    return JsonResponse(response)
