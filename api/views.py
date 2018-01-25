@@ -13,7 +13,7 @@ import time
 import json
 
 from .aggregator.tasks import aggregate_users, aggregate_user_match, aggregate_global_stats
-from .models import ProfileStats, ChampionItems, UserChampionStats, Matches, UserLeagues, UserChampionMasteries
+from .models import ProfileStats, ChampionItems, UserChampionStats, Matches, MatchLawn, UserLeagues, UserChampionMasteries
 from . import items as Items
 from . import consts as Consts
 
@@ -85,14 +85,28 @@ def normalize_region(region):
 
 
 @require_http_methods(["GET"])
-def get_version(request):
-    region = request.GET['region']
+def get_static_data(request):
+    region = normalize_region(request.GET['region'])
 
     response = {}
     try:
         response['version'] = cass.get_version(region=region)
-    except:
-        log.warn("failed to get version", stack_info=True)
+        
+        items_response = {}
+        items = cass.get_items(region=region)
+        for item in items:
+            item_response = {}
+            item_response['name'] = item.name
+            item_response['totalGold'] = item.gold.total
+            item_response['sellGold'] = item.gold.sell
+            item_response['description'] = item.description
+            item_response['plaintext'] = item.plaintext
+            items_response[str(item.id)] = item_response
+        response['items'] = items_response
+        
+    except Exception as e:
+        log.warn("failed to get static data", stack_info=True)
+        log.warn(e)
         return HttpResponse(status=500)
         
     return JsonResponse(response)
@@ -178,9 +192,16 @@ def get_summoner(request):
         log.warn("ProfileStats not found after update in get_summoner")
         return HttpResponse("Error retrieving leagues", status=500)
 
+    try:
+        lawn = MatchLawn.objects.filter(user_id=s.id, region=region).order_by('-date')[:90]
+    except:
+        log.warn("Lawn not found after update in get_summoner")
+        return HttpResponse("Error retrieving matchlawn", status=500)
+
     response = model_to_dict(summoner)
     response['championMasteries'] = list(cmasteries.values())
     response['leagues'] = list(userLeagues.values())
+    response['lawn'] = list(lawn.values())
 
     return JsonResponse(response)
 
@@ -238,7 +259,7 @@ def get_current_match(request):
         return HttpResponse(status=404)
 
     response = {}
-
+ 
     red_team = []
     blue_team = []
     for participant in m.participants:
@@ -262,12 +283,7 @@ def get_current_match(request):
 
     return JsonResponse(response)
 
-@require_http_methods(["GET"])
-def get_current_match_details(request):
-    summoner_name = request.GET['summoner_name']
-    region = normalize_region(request.GET['region'])
-    champion_id = int(request.GET['champion_id'])
-
+def current_match_details_helper(summoner_name, region, champion_id):
     s = cass.get_summoner(name=summoner_name, region=region)
     if s.exists:
         matchlist = cass.get_match_history(summoner=s, region=region, champions=[champion_id], begin_index=0, end_index=20)
@@ -329,7 +345,34 @@ def get_current_match_details(request):
     response['stats'] = stats
     response['build'] = build
 
+    return response
+
+
+@require_http_methods(["POST"])
+def get_current_match_details_by_batch(request):
+    summoners = request.POST['summoners']
+    region = normalize_region(request.POST['region'])
+
+    response = {}
+
+    for s in summoners:
+        cid = int(s.champion_id)
+        name = s.summoner_name
+        response[name] = current_match_details_helper(name, region, cid)
+
     return JsonResponse(response)
+
+
+@require_http_methods(["GET"])
+def get_current_match_details(request):
+    summoner_name = request.GET['summoner_name']
+    region = normalize_region(request.GET['region'])
+    champion_id = int(request.GET['champion_id'])
+
+    response = current_match_details_helper(summoner_name, region, champion_id)
+
+    return JsonResponse(response)
+
 
 @require_http_methods(["GET"])
 def get_match_timeline(request):

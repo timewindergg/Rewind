@@ -11,5 +11,5 @@ urlpatterns = [
     url(r'^get_current_match/$', views.get_current_match),
     url(r'^get_current_match_details/$', views.get_current_match_details),
     url(r'^update_summoner/$', views.update_summoner),
-    url(r'^get_version/$', views.get_version),
+    url(r'^get_static_data/$', views.get_static_data),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

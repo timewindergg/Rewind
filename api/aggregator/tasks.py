@@ -3,11 +3,12 @@ from celery.contrib import rdb
 
 from django.db import transaction
 
-from api.models import ProfileStats, Matches, UserChampionStats, ChampionItems, ChampionRunes
+from api.models import ProfileStats, Matches, MatchLawn, UserChampionStats, ChampionItems, ChampionRunes
 import cassiopeia as cass
 from cassiopeia import data
 
 import json
+import datetime
 
 import logging
 log = logging.getLogger(__name__)
@@ -72,11 +73,6 @@ def aggregate_user_match(region, summoner_id, match_id):
                 user = participant
                 break
 
-        if user.stats.win:
-            profile.wins += 1
-        else:
-            profile.losses += 1
-
         try:
             wards_placed = user.stats.wards_placed
             wards_killed = user.stats.wards_killed
@@ -90,8 +86,8 @@ def aggregate_user_match(region, summoner_id, match_id):
         
         red_team = [p.to_json() for p in match.red_team.participants]
         blue_team = [p.to_json() for p in match.blue_team.participants]
-
-        Matches.objects.get_or_create(
+        
+        Matches.objects.select_for_update().get_or_create(
             user_id=summoner.id,
             match_id=match.id,
             region=match.region.value,
@@ -128,6 +124,13 @@ def aggregate_user_match(region, summoner_id, match_id):
             blue_team=json.dumps(blue_team),
         )
 
+        lawn, created = MatchLawn.objects.select_for_update().get_or_create(user_id=summoner.id, region=region, date=datetime.datetime.fromtimestamp(match.creation.timestamp()))
+        if user.stats.win:
+            lawn.wins += 1
+        else:
+            lawn.losses += 1
+        lawn.save()
+
         champion, created = UserChampionStats.objects.select_for_update().get_or_create(user_id=summoner.id, region=region, season_id=season_id, champ_id=user.champion.id)
         if user.stats.win:
             champion.wins += 1
@@ -152,6 +155,11 @@ def aggregate_user_match(region, summoner_id, match_id):
                 profile.last_match_updated = match.id
         except: # Player does not have any matches
             pass
+
+        if user.stats.win:
+            profile.wins += 1
+        else:
+            profile.losses += 1
         profile.save()
 
 

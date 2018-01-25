@@ -113,6 +113,14 @@ class UserAccolades(models.Model):
         unique_together = (("user_id", "region", "accolade_id"),)
 
 
+class MatchLawn(models.Model):
+    user_id = models.IntegerField()
+    region = models.CharField(max_length=10)
+    date = models.DateField()
+    wins = models.IntegerField(default=0)
+    losses = models.IntegerField(default=0)
+
+
 class Matches(models.Model):
     user_id = models.IntegerField()
     match_id = models.BigIntegerField()
