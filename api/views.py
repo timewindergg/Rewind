@@ -213,8 +213,8 @@ def get_match_history(request):
     offset = int(request.GET['offset'])
     size = int(request.GET['size'])
 
-    summoner = cass.get_summoner(name=summoner_name)
-    if not s.exists:
+    summoner = cass.get_summoner(name=summoner_name, region=region)
+    if not summoner.exists:
         return HttpResponse('Summoenr does not exist', status=404)
 
     try:
