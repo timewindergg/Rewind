@@ -278,8 +278,13 @@ def get_current_match(request):
         elif participant.side.value == 200:
             red_team.append(p)
 
+    blue_bans = [v.id for k, v in c.teams[0].bans.items()]
+    red_bans = [v.id for k, v in c.teams[1].bans.items()]
+
     response['red_team'] = red_team
     response['blue_team'] = blue_team
+    response['red_bans'] = red_bans
+    response['blue_bans'] = blue_bans
 
     return JsonResponse(response)
 
