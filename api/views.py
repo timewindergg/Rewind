@@ -281,10 +281,16 @@ def get_current_match(request):
     blue_bans = [v.id for k, v in m.teams[0].bans.items()]
     red_bans = [v.id for k, v in m.teams[1].bans.items()]
 
+    queue = {}
+    queue['id'] = m.queue.id
+    queue['value'] = m.queue.value
+
     response['red_team'] = red_team
     response['blue_team'] = blue_team
     response['red_bans'] = red_bans
     response['blue_bans'] = blue_bans
+    response['creation'] = round(m.creation.timestamp())
+    response['queue'] = queue
 
     return JsonResponse(response)
 
