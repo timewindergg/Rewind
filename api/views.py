@@ -121,7 +121,6 @@ def update_summoner_helper(s, region):
             update = True
             summoner.last_updated = round(time.time())
             summoner.name = s.name
-            summoner.region = region
             summoner.icon = s.profile_icon.id
             summoner.level = s.level
             summoner.save()
