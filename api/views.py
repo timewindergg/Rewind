@@ -116,19 +116,19 @@ def update_summoner_helper(s, region):
     update = False
 
     with transaction.atomic():
-        summoner, created = ProfileStats.objects.select_for_update().get_or_create(user_id=s.id, region=s.region.value)
+        summoner, created = ProfileStats.objects.select_for_update().get_or_create(user_id=s.id, region=region)
         if created or summoner.last_updated < time.time() - Consts.SECONDS_BETWEEN_UPDATES:
             update = True
             summoner.last_updated = round(time.time())
             summoner.name = s.name
-            summoner.region = s.region.value
+            summoner.region = region
             summoner.icon = s.profile_icon.id
             summoner.level = s.level
             summoner.save()
 
             leagues = cass.get_league_positions(summoner=s, region=region)
             for league in leagues:
-                user_league, created = UserLeagues.objects.select_for_update().get_or_create(user_id=s.id, region=s.region.value, queue=league.queue.value)
+                user_league, created = UserLeagues.objects.select_for_update().get_or_create(user_id=s.id, region=region, queue=league.queue.value)
                 user_league.tier = league.tier.value
                 user_league.division = league.division.value
                 user_league.points = league.league_points
@@ -145,7 +145,7 @@ def update_summoner_helper(s, region):
                 user_champion.save()
 
     if update:
-        aggregate_users.delay(s.id, s.region.value, 5)
+        aggregate_users.delay(summoner.user_id, region, 500)
 
 
 @csrf_exempt
