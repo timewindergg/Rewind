@@ -142,9 +142,8 @@ def update_summoner_helper(s, region):
                 user_champion.points_to_next = cmastery.points_until_next_level
                 user_champion.chest_granted = cmastery.chest_granted
                 user_champion.save()
-
-    if update:
-        aggregate_users.delay(summoner.user_id, region, 500)
+                
+        transaction.on_commit(lambda: aggregate_users.delay(summoner.user_id, region, 500))
 
 
 @csrf_exempt

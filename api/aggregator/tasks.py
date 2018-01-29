@@ -59,13 +59,13 @@ def aggregate_user_match(region, summoner_id, match_id):
         log.warn("Error checking is_ranked in aggregate_user_match")
         is_ranked = False
 
-    if is_ranked:
-        aggregate_global_stats(match=match)
-    else:
-        return
-
     with transaction.atomic():
-        profile = ProfileStats.objects.select_for_update().get(user_id=summoner_id, region=region)
+        try:
+            profile = ProfileStats.objects.select_for_update().get(user_id=summoner_id, region=region)
+        except Exception as e:
+            log.error("Summoner not created in database")
+            return
+
         profile.time_played += match.duration.total_seconds()
 
         for participant in match.participants:
@@ -161,6 +161,11 @@ def aggregate_user_match(region, summoner_id, match_id):
         else:
             profile.losses += 1
         profile.save()
+
+    if is_ranked:
+        aggregate_global_stats(match=match)
+    else:
+        return
 
 
 def aggregate_global_stats(match):
