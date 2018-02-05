@@ -196,10 +196,17 @@ def get_summoner(request):
         log.warn("Lawn not found after update in get_summoner")
         return HttpResponse("Error retrieving matchlawn", status=500)
 
+    try:
+        champ_stats = UserChampionStats.objects.filter(user_id=s.id, region=region)
+    except:
+        log.warn("Champ stats not found after update in get_summoner")
+        return HttpResponse(status=500)
+
     response = model_to_dict(summoner)
     response['championMasteries'] = list(cmasteries.values())
     response['leagues'] = list(userLeagues.values())
     response['lawn'] = list(lawn.values())
+    response['championStats'] = list(champ_stats.values())
 
     return JsonResponse(response)
 
