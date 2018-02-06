@@ -188,7 +188,7 @@ def aggregate_user_match(region, summoner_id, match_id):
         summoner_string = json.dumps(sorted_summs)
         ucs, created = UserChampionSummoners.objects.select_for_update().get_or_create(user_id=summoner.id, region=region, season_id=season_id, lane=user.lane.value, champ_id=user.champion.id, summoner_set=summoner_string)
         ucs.occurence += 1
-        ucr.save()
+        ucs.save()
 
         try:
             if profile.last_match_updated < match.id:
