@@ -274,7 +274,7 @@ def get_user_champion_stats(summoner_name, region, champion_id):
         return HttpResponse(status=500)
 
     try:
-        champ_runes = UserChampionRunes.objects.filter(user_id=summoner.id, region=region, champ_id=champion_id)
+        champ_runes = UserChampionRunes.objects.filter(user_id=summoner.id, region=region, champ_id=champion_id).order_by('-occurence')
     except:
         log.warn("failed to get champ_runes", stack_info=True)
         return HttpResponse(status=500)
@@ -288,7 +288,7 @@ def get_user_champion_stats(summoner_name, region, champion_id):
 
 
 @require_http_methods
-def get_user_champion_stats_by_name(request):
+def get_user_champion_stats_by_id(request):
     summoner_name = request.GET['summoner_name']
     region = normalize_region(request.GET['region'])
     champion_id = int(['champion_id'])
@@ -297,7 +297,7 @@ def get_user_champion_stats_by_name(request):
 
 
 @require_http_methods(["GET"])
-def get_user_champion_stats_by_id(request):
+def get_user_champion_stats_by_name(request):
     summoner_name = request.GET['summoner_name']
     region = normalize_region(request.GET['region'])
     champion_id = get_champion_id(request.GET['champion_name'])

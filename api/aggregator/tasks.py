@@ -28,7 +28,7 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
         if updated or index >= max_aggregations and max_aggregations > 0:
             break
 
-        recent_matches = cass.get_match_history(summoner=summoner, region=region, begin_index=index, end_index=index+100, seasons=[cass.data.Season.from_id(10)])
+        recent_matches = cass.get_match_history(summoner=summoner, region=region, begin_index=index, end_index=index+100, seasons=[cass.data.Season.from_id(11)])
 
         for match in recent_matches:
             if profile.last_match_updated == match.id:
@@ -166,7 +166,8 @@ def aggregate_user_match(region, summoner_id, match_id):
             championv.save()
 
         try:
-            sorted_runes = [r.id for r in user.runes].sort()
+            sorted_runes = [r.id for r in user.runes]
+            sorted_runes.sort()
             rune_string = json.dumps(sorted_runes)
             ucr, created = UserChampionRunes.objects.select_for_update().get_or_create(user_id=summoner.id, region=region, season_id=season_id, lane=user.lane.value, champ_id=user.champion.id, rune_set=rune_string)
             ucr.occurence += 1
