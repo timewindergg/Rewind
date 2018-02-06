@@ -77,6 +77,9 @@ cass.apply_settings({
   }
 })
 
+#
+# HELPER FUNCTIONS
+#
 def normalize_region(region):
     try:
         return region.upper()
@@ -86,7 +89,9 @@ def normalize_region(region):
 def get_champion_id(name):
     return int(Consts.CHAMPION_IDS[name.lower()])
 
-
+#
+# STATIC DATA
+#
 @require_http_methods(["GET"])
 def get_static_data(request):
     region = normalize_region(request.GET['region'])
@@ -114,7 +119,9 @@ def get_static_data(request):
         
     return JsonResponse(response)
 
-
+#
+# UPDATE SUMMONER
+#
 def update_summoner_helper(s, region):
     update = False
 
@@ -163,7 +170,9 @@ def update_summoner(request):
 
     return HttpResponse(status=200)
 
-
+#
+# GET SUMMONER
+#
 @require_http_methods(["GET"])
 def get_summoner(request):
     summoner_name = request.GET['summoner_name']
@@ -213,7 +222,9 @@ def get_summoner(request):
 
     return JsonResponse(response)
 
-
+#
+# MATCH HISTORY
+#
 @require_http_methods(["GET"])
 def get_match_history(request):
     summoner_name = request.GET['summoner_name']
@@ -234,14 +245,10 @@ def get_match_history(request):
 
     return JsonResponse(response, safe=False)
 
-
-@require_http_methods(["GET"])
-def get_user_champion_stats(request):
-    summoner_name = request.GET['summoner_name']
-    region = normalize_region(request.GET['region'])
-    champion_id = get_champion_id(request.GET['champion_name'])
-    print(champion_id)
-
+#
+# USER CHAMPION STATS
+#
+def get_user_champion_stats(summoner_name, region, champion_id):
     summoner = cass.get_summoner(name=summoner_name, region=region)
     if not summoner.exists:
         return HttpResponse('Summoner does not exist', status=404)
@@ -279,6 +286,27 @@ def get_user_champion_stats(request):
 
     return JsonResponse(response)
 
+
+@require_http_methods
+def get_user_champion_stats_by_name(request):
+    summoner_name = request.GET['summoner_name']
+    region = normalize_region(request.GET['region'])
+    champion_id = int(['champion_id'])
+
+    return get_user_champion_stats(summoner_name, region, champion_id)
+
+
+@require_http_methods(["GET"])
+def get_user_champion_stats_by_id(request):
+    summoner_name = request.GET['summoner_name']
+    region = normalize_region(request.GET['region'])
+    champion_id = get_champion_id(request.GET['champion_name'])
+
+    return get_user_champion_stats(summoner_name, region, champion_id)
+
+#
+# CURRENT MATCH
+#
 @require_http_methods(["GET"])
 def get_current_match(request):
     summoner_name = request.GET['summoner_name']
@@ -329,7 +357,10 @@ def get_current_match(request):
 
     return JsonResponse(response)
 
-def current_match_details_helper(summoner_name, region, champion_id):
+#
+# CURRENT_MATCH_DETAILS
+#
+def get_current_match_details(summoner_name, region, champion_id):
     s = cass.get_summoner(name=summoner_name, region=region)
     if s.exists:
         matchlist = cass.get_match_history(summoner=s, region=region, champions=[champion_id], begin_index=0, end_index=20)
@@ -404,22 +435,24 @@ def get_current_match_details_by_batch(request):
     for s in summoners:
         cid = int(s.champion_id)
         name = s.summoner_name
-        response[name] = current_match_details_helper(name, region, cid)
+        response[name] = get_current_match_details(name, region, cid)
 
     return JsonResponse(response)
 
 
 @require_http_methods(["GET"])
-def get_current_match_details(request):
+def get_current_match_details_by_id(request):
     summoner_name = request.GET['summoner_name']
     region = normalize_region(request.GET['region'])
     champion_id = int(request.GET['champion_id'])
 
-    response = current_match_details_helper(summoner_name, region, champion_id)
+    response = get_current_match_details(summoner_name, region, champion_id)
 
     return JsonResponse(response)
 
-
+#
+# MATCH TIMELINE
+#
 @require_http_methods(["GET"])
 def get_match_timeline(request):
     region = normalize_region(request.GET['region'])
