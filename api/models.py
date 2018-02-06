@@ -51,7 +51,7 @@ class UserChampionRunes(models.Model):
     occurence = models.IntegerField(default=0)
 
     class Meta:
-        unique_together = (("user_id", "region", "season_id", "champ_id", "lane"),)
+        unique_together = (("user_id", "region", "season_id", "champ_id", "lane", "rune_set"),)
 
 
 class UserChampionMasteries(models.Model):
@@ -66,7 +66,20 @@ class UserChampionMasteries(models.Model):
 
     class Meta:
         unique_together = (("user_id", "region", "champ_id"),)
-        
+
+
+class UserChampionSummoners(models.Model):
+    user_id = models.IntegerField()
+    region = models.CharField(max_length=10)
+    champ_id = models.IntegerField()
+    season_id = models.IntegerField()
+    lane = models.CharField(max_length=50)
+    summoner_set = models.TextField()
+    occurence = models.IntegerField(default=0)
+
+    class Meta:
+        unique_together = (("user_id", "region", "season_id", "champ_id", "lane", "summoner_set"),)
+
 
 class UserChampionVersusStats(models.Model):
     user_id = models.IntegerField()
@@ -109,6 +122,10 @@ class UserChampionStats(models.Model):
     triples = models.IntegerField(default=0)
     doubles = models.IntegerField(default=0)
     gold = models.IntegerField(default=0)
+    lane_top = models.IntegerField(default=0)
+    lane_jg = models.IntegerField(default=0)
+    lane_mid = models.IntegerField(default=0)
+    lane_bot = models.IntegerField(default=0)
 
     class Meta:
         unique_together = (("user_id", "region", "season_id", "champ_id"),)

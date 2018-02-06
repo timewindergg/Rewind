@@ -13,7 +13,7 @@ import time
 import json
 
 from .aggregator.tasks import aggregate_users, aggregate_user_match, aggregate_global_stats
-from .models import ProfileStats, ChampionItems, UserChampionStats, Matches, MatchLawn, UserLeagues, UserChampionMasteries, UserChampionVersusStats, UserChampionItems, UserChampionRunes
+from .models import ProfileStats, ChampionItems, UserChampionStats, Matches, MatchLawn, UserLeagues, UserChampionMasteries, UserChampionVersusStats, UserChampionItems, UserChampionRunes, UserChampionSummoners
 from . import items as Items
 from . import consts as Consts
 
@@ -268,7 +268,40 @@ def get_user_champion_stats(summoner_name, region, champion_id):
         return HttpResponse(status=500)
 
     try:
-        champ_items = UserChampionItems.objects.filter(user_id=summoner.id, region=region, champ_id=champion_id)
+        championItems = {}
+        items = UserChampionItems.objects.raw('SELECT * FROM api_userchampionitems ci INNER JOIN api_items i ON ci.item_id = i.item_id WHERE ci.champ_id = %s AND ci.season_id = 11 ORDER BY ci.occurence DESC' % champion_id)
+
+        # top
+        boots = [item.item_id for item in items if item.item_type == Consts.ITEM_BOOTS and item.lane == cass.data.Lane.top_lane.value]
+        all_items = [item.item_id for item in items if item.item_type == Consts.ITEM_CORE and item.lane == cass.data.Lane.top_lane.value]
+        itemset = {}
+        itemset['items'] = all_items
+        itemset['boots'] = boots
+        championItems['top'] = itemset
+
+        # jungle
+        boots = [item.item_id for item in items if item.item_type == Consts.ITEM_BOOTS and item.lane == cass.data.Lane.jungle.value]
+        all_items = [item.item_id for item in items if item.item_type == Consts.ITEM_CORE and item.lane == cass.data.Lane.jungle.value]
+        itemset = {}
+        itemset['items'] = all_items
+        itemset['boots'] = boots
+        championItems['jg'] = itemset
+
+        # mid
+        boots = [item.item_id for item in items if item.item_type == Consts.ITEM_BOOTS and item.lane == cass.data.Lane.mid_lane.value]
+        all_items = [item.item_id for item in items if item.item_type == Consts.ITEM_CORE and item.lane == cass.data.Lane.mid_lane.value]
+        itemset = {}
+        itemset['items'] = all_items
+        itemset['boots'] = boots
+        championItems['mid'] = itemset
+
+        # bot
+        boots = [item.item_id for item in items if item.item_type == Consts.ITEM_BOOTS and item.lane == cass.data.Lane.bot_lane.value]
+        all_items = [item.item_id for item in items if item.item_type == Consts.ITEM_CORE and item.lane == cass.data.Lane.bot_lane.value]
+        itemset = {}
+        itemset['items'] = all_items
+        itemset['boots'] = boots
+        championItems['bot'] = itemset
     except:
         log.warn("failed to get champ_items", stack_info=True)
         return HttpResponse(status=500)
@@ -279,10 +312,17 @@ def get_user_champion_stats(summoner_name, region, champion_id):
         log.warn("failed to get champ_runes", stack_info=True)
         return HttpResponse(status=500)
 
+    try:
+        champ_summs = UserChampionSummoners.objects.filter(user_id=summoner.id, region=region, champ_id=champion_id).order_by('-occurence')
+    except:
+        log.warn("failed to get champ_summs", stack_info=True)
+        return HttpResponse(status=500)
+
     response['championStats'] = list(champ_stats.values())
     response['championMatchups'] = list(champ_versus.values())
-    response['championItems'] = list(champ_items.values())
+    response['championItems'] = championItems
     response['championRunes'] = list(champ_runes.values())
+    response['championSummoners'] = list(champ_summs.values())
 
     return JsonResponse(response)
 

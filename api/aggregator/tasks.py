@@ -3,7 +3,7 @@ from celery.contrib import rdb
 
 from django.db import transaction
 
-from api.models import ProfileStats, Matches, MatchLawn, UserChampionStats, ChampionItems, ChampionRunes, UserChampionVersusStats, UserChampionItems, UserChampionRunes
+from api.models import ProfileStats, Matches, MatchLawn, UserChampionStats, ChampionItems, ChampionRunes, UserChampionVersusStats, UserChampionItems, UserChampionRunes, UserChampionSummoners
 import cassiopeia as cass
 from cassiopeia import data
 
@@ -149,6 +149,14 @@ def aggregate_user_match(region, summoner_id, match_id):
         champion.total_cs += user.stats.total_minions_killed
         champion.game_length += match.duration.total_seconds()
         champion.gold += user.stats.gold_earned
+        if user.lane == cass.data.Lane.top_lane:
+            champion.lane_top += 1
+        elif user.lane == cass.data.Lane.jungle:
+            champion.lane_jg += 1
+        elif user.lane == cass.data.Lane.mid_lane:
+            champion.lane_mid += 1
+        elif user.lane == cass.data.Lane.bot_lane:
+            champion.lane_bot += 1
         champion.save()
 
         if user.side.value == 100:
@@ -174,6 +182,13 @@ def aggregate_user_match(region, summoner_id, match_id):
             ucr.save()
         except:
             log.warn("legacy runes")
+
+        sorted_summs = [user.summoner_spell_d.id, user.summoner_spell_f.id]
+        sorted_summs.sort()
+        summoner_string = json.dumps(sorted_summs)
+        ucs, created = UserChampionSummoners.objects.select_for_update().get_or_create(user_id=summoner.id, region=region, season_id=season_id, lane=user.lane.value, champ_id=user.champion.id, summoner_set=summoner_string)
+        ucs.occurence += 1
+        ucr.save()
 
         try:
             if profile.last_match_updated < match.id:
