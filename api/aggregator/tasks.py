@@ -3,7 +3,7 @@ from celery.contrib import rdb
 
 from django.db import transaction
 
-from api.models import ProfileStats, Matches, MatchLawn, UserChampionStats, ChampionItems, ChampionRunes
+from api.models import ProfileStats, Matches, MatchLawn, UserChampionStats, ChampionItems, ChampionRunes, UserChampionVersusStats, UserChampionItems, UserChampionRunes
 import cassiopeia as cass
 from cassiopeia import data
 
@@ -28,7 +28,7 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
         if updated or index >= max_aggregations and max_aggregations > 0:
             break
 
-        recent_matches = cass.get_match_history(summoner=summoner, region=region, begin_index=index, end_index=index+100)
+        recent_matches = cass.get_match_history(summoner=summoner, region=region, begin_index=index, end_index=index+100, seasons=[cass.data.Season.from_id(10)])
 
         for match in recent_matches:
             if profile.last_match_updated == match.id:
@@ -148,7 +148,31 @@ def aggregate_user_match(region, summoner_id, match_id):
             champion.first_bloods += 1
         champion.total_cs += user.stats.total_minions_killed
         champion.game_length += match.duration.total_seconds()
+        champion.gold += user.stats.gold_earned
         champion.save()
+
+        if user.side.value == 100:
+            enemy_team = match.red_team.participants
+        elif user.side.value == 200:
+            enemy_team = match.blue_team.participants
+
+        for enemy in enemy_team:
+            championv, created = UserChampionVersusStats.objects.select_for_update().get_or_create(user_id=summoner.id, region=region, season_id=season_id, champ_id=user.champion.id, enemy_champ_id=enemy.champion.id)
+            championv.total_games += 1
+            if user.stats.win:
+                championv.wins += 1
+            else:
+                championv.losses += 1
+            championv.save()
+
+        try:
+            sorted_runes = [r.id for r in user.runes].sort()
+            rune_string = json.dumps(sorted_runes)
+            ucr, created = UserChampionRunes.objects.select_for_update().get_or_create(user_id=summoner.id, region=region, season_id=season_id, lane=user.lane.value, champ_id=user.champion.id, rune_set=rune_string)
+            ucr.occurence += 1
+            ucr.save()
+        except:
+            log.warn("legacy runes")
 
         try:
             if profile.last_match_updated < match.id:
@@ -161,6 +185,13 @@ def aggregate_user_match(region, summoner_id, match_id):
         else:
             profile.losses += 1
         profile.save()
+
+    for item in user.stats.items:
+        if item:
+            with transaction.atomic():
+                uci, created = UserChampionItems.objects.select_for_update().get_or_create(user_id=summoner.id, region=region, season_id=season_id, lane=user.lane.value, champ_id=user.champion.id, item_id=item.id)
+                uci.occurence += 1
+                uci.save()
 
     if is_ranked:
         aggregate_global_stats(match=match)
@@ -180,7 +211,7 @@ def aggregate_global_stats(match):
         try: # Legacy runes will break this. Cassiopeia only supports runes reforged atm.
             for rune in participant.runes:
                 with transaction.atomic():
-                    champ_rune, created = ChampionRunes.objects.select_for_update().get_or_create(champ_id=champ_id, rune_id=rune[0].id)
+                    champ_rune, created = ChampionRunes.objects.select_for_update().get_or_create(champ_id=champ_id, rune_id=rune.id)
                     champ_rune.occurence += 1
                     champ_rune.save()
         except:

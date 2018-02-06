@@ -13,7 +13,7 @@ import time
 import json
 
 from .aggregator.tasks import aggregate_users, aggregate_user_match, aggregate_global_stats
-from .models import ProfileStats, ChampionItems, UserChampionStats, Matches, MatchLawn, UserLeagues, UserChampionMasteries
+from .models import ProfileStats, ChampionItems, UserChampionStats, Matches, MatchLawn, UserLeagues, UserChampionMasteries, UserChampionVersusStats, UserChampionItems, UserChampionRunes
 from . import items as Items
 from . import consts as Consts
 
@@ -82,6 +82,9 @@ def normalize_region(region):
         return region.upper()
     except:
         return region
+
+def get_champion_id(name):
+    return int(Consts.CHAMPION_IDS[name.lower()])
 
 
 @require_http_methods(["GET"])
@@ -220,7 +223,7 @@ def get_match_history(request):
 
     summoner = cass.get_summoner(name=summoner_name, region=region)
     if not summoner.exists:
-        return HttpResponse('Summoenr does not exist', status=404)
+        return HttpResponse('Summoner does not exist', status=404)
 
     try:
         matches = Matches.objects.filter(user_id=summoner.id, region=region).order_by('-timestamp')[offset:size]
@@ -236,18 +239,45 @@ def get_match_history(request):
 def get_user_champion_stats(request):
     summoner_name = request.GET['summoner_name']
     region = normalize_region(request.GET['region'])
+    champion_id = get_champion_id(request.GET['champion_name'])
+    print(champion_id)
 
-    s = cass.get_summoner(name=summoner_name, region=region)
+    summoner = cass.get_summoner(name=summoner_name, region=region)
+    if not summoner.exists:
+        return HttpResponse('Summoner does not exist', status=404)
+
+    response = {}
 
     try:
-        profile = ProfileStats.objects.get(user_id=s.id, region=region)
+        champ_stats = UserChampionStats.objects.filter(user_id=summoner.id, region=region, champ_id=champion_id)
     except:
-        return HttpResponse(status=404)
+        log.warn("failed to get champ_stats", stack_info=True)
+        return HttpResponse(status=500)
 
-    champ_stats = UserChampionStats.objects.filter(user_id=s.id, region=region)
-    response = list(champ_stats.values())
+    try:
+        champ_versus = UserChampionVersusStats.objects.filter(user_id=summoner.id, region=region, champ_id=champion_id)
+    except:
+        log.warn("failed to get champ_versus", stack_info=True)
+        return HttpResponse(status=500)
 
-    return JsonResponse(response, safe=False)
+    try:
+        champ_items = UserChampionItems.objects.filter(user_id=summoner.id, region=region, champ_id=champion_id)
+    except:
+        log.warn("failed to get champ_items", stack_info=True)
+        return HttpResponse(status=500)
+
+    try:
+        champ_runes = UserChampionRunes.objects.filter(user_id=summoner.id, region=region, champ_id=champion_id)
+    except:
+        log.warn("failed to get champ_runes", stack_info=True)
+        return HttpResponse(status=500)
+
+    response['championStats'] = list(champ_stats.values())
+    response['championMatchups'] = list(champ_versus.values())
+    response['championItems'] = list(champ_items.values())
+    response['championRunes'] = list(champ_runes.values())
+
+    return JsonResponse(response)
 
 @require_http_methods(["GET"])
 def get_current_match(request):

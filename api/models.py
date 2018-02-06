@@ -28,6 +28,32 @@ class ChampionRunes(models.Model):
         unique_together = (("champ_id", "rune_id"),)
 
 
+class UserChampionItems(models.Model):
+    user_id = models.IntegerField()
+    region = models.CharField(max_length=10)
+    champ_id = models.IntegerField()
+    season_id = models.IntegerField()
+    lane = models.CharField(max_length=50)
+    item_id = models.IntegerField()
+    occurence = models.IntegerField(default=0)
+
+    class Meta:
+        unique_together = (("user_id", "region", "season_id", "champ_id", "lane", "item_id"),)
+
+
+class UserChampionRunes(models.Model):
+    user_id = models.IntegerField()
+    region = models.CharField(max_length=10)
+    champ_id = models.IntegerField()
+    season_id = models.IntegerField()
+    lane = models.CharField(max_length=50)
+    rune_set = models.TextField()
+    occurence = models.IntegerField(default=0)
+
+    class Meta:
+        unique_together = (("user_id", "region", "season_id", "champ_id", "lane"),)
+
+
 class UserChampionMasteries(models.Model):
     user_id = models.IntegerField()
     region = models.CharField(max_length=10)
@@ -42,6 +68,19 @@ class UserChampionMasteries(models.Model):
         unique_together = (("user_id", "region", "champ_id"),)
         
 
+class UserChampionVersusStats(models.Model):
+    user_id = models.IntegerField()
+    region = models.CharField(max_length=10)
+    season_id = models.IntegerField()
+    champ_id = models.IntegerField()
+    enemy_champ_id = models.IntegerField()
+    wins = models.IntegerField(default=0)
+    losses = models.IntegerField(default=0)
+    total_games = models.IntegerField(default=0)
+
+    class Meta:
+        unique_together = (("user_id", "region", "season_id", "champ_id", "enemy_champ_id"),)
+
 class UserChampionStats(models.Model):
     user_id = models.IntegerField()
     region = models.CharField(max_length=10)
@@ -54,6 +93,12 @@ class UserChampionStats(models.Model):
     wins = models.IntegerField(default=0)
     losses = models.IntegerField(default=0)
     total_games = models.IntegerField(default=0)
+    total_games20 = models.IntegerField(default=0)
+    total_games25 = models.IntegerField(default=0)
+    total_games30 = models.IntegerField(default=0)
+    total_games35 = models.IntegerField(default=0)
+    total_games40 = models.IntegerField(default=0)
+    total_games40p = models.IntegerField(default=0)
     total_cs = models.IntegerField(default=0)
     total_cs10 = models.IntegerField(default=0)
     total_cs20 = models.IntegerField(default=0)
@@ -63,6 +108,7 @@ class UserChampionStats(models.Model):
     quadras = models.IntegerField(default=0)
     triples = models.IntegerField(default=0)
     doubles = models.IntegerField(default=0)
+    gold = models.IntegerField(default=0)
 
     class Meta:
         unique_together = (("user_id", "region", "season_id", "champ_id"),)
