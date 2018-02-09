@@ -4,6 +4,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.forms.models import model_to_dict
 from django.db import transaction
+from django.db.models import Sum, Q
 
 import os
 import cassiopeia as cass
@@ -11,6 +12,7 @@ from cassiopeia.core import CurrentMatch
 import datetime
 import time
 import json
+from functools import reduce
 
 from .aggregator.tasks import aggregate_users, aggregate_user_match, aggregate_global_stats
 from .models import ProfileStats, ChampionItems, UserChampionStats, Matches, MatchLawn, UserLeagues, UserChampionMasteries, UserChampionVersusStats, UserChampionItems, UserChampionRunes, UserChampionSummoners
@@ -20,7 +22,6 @@ from . import consts as Consts
 import logging
 log = logging.getLogger(__name__)
 
-cass.set_riot_api_key(os.environ["RIOT_API_KEY"])
 cass.apply_settings({
   "global": {
     "default_region": None
@@ -65,8 +66,8 @@ cass.apply_settings({
     "DDragon": {},
 
     "RiotAPI": {
-      "api_key": "RIOT_API_KEY"
-    }
+      "api_key": os.environ["RIOT_API_KEY"]
+    },
   },
 
   "logging": {
@@ -362,7 +363,11 @@ def get_current_match(request):
         return HttpResponse(status=404)
 
     response = {}
- 
+    winrates = {}
+
+    blue_team_champs = [p.champion.id for p in m.teams[0].participants] 
+    red_team_champs = [p.champion.id for p in m.teams[1].participants]
+
     red_team = []
     blue_team = []
     for participant in m.participants:
@@ -378,9 +383,16 @@ def get_current_match(request):
         p['runes'] = runes
         if participant.side.value == 100:
             blue_team.append(p)
+            cvs = UserChampionVersusStats.objects.filter(Q(champ_id=participant.champion.id) & reduce(lambda x, y: x | y, [Q(enemy_champ_id=champ) for champ in red_team_champs])).values('enemy_champ_id').annotate(Sum('wins'), Sum('losses'), Sum('total_games'))
         elif participant.side.value == 200:
             red_team.append(p)
+            cvs = UserChampionVersusStats.objects.filter(Q(champ_id=participant.champion.id) & reduce(lambda x, y: x | y, [Q(enemy_champ_id=champ) for champ in blue_team_champs])).values('enemy_champ_id').annotate(Sum('wins'), Sum('losses'), Sum('total_games'))
 
+        winrate = {}
+        for c in cvs:
+            winrate[c['enemy_champ_id']] = c
+        winrates[str(participant.champion.id)] = winrate    
+        
     blue_bans = [v.id for k, v in m.teams[0].bans.items()]
     red_bans = [v.id for k, v in m.teams[1].bans.items()]
 
@@ -394,6 +406,7 @@ def get_current_match(request):
     response['blue_bans'] = blue_bans
     response['creation'] = round(m.creation.timestamp())
     response['queue'] = queue
+    response['winrates'] = winrates
 
     return JsonResponse(response)
 
@@ -415,14 +428,26 @@ def get_current_match_details(summoner_name, region, champion_id):
         "deaths": 0,
         "assists": 0,
         "totalCs": 0,
-        "totalCs10": 0,
-        "totalCs20": 0,
-        "totalCs30": 0,
+        "cs10": 0,
+        "cs20": 0,
+        "cs30": 0,
+        "gold10": 0,
+        "gold20": 0,
+        "gold30": 0,
         "wins": 0,
         "losses": 0
     }
     match_history = []
 
+    games10 = 0
+    games20 = 0
+    games30 = 0
+    cs10 = 0
+    cs20 = 0
+    cs30 = 0
+    gold10 = 0
+    gold20 = 0
+    gold30 = 0
     for match in matchlist:
         for participant in match.participants:
             if participant.summoner.id == s.id and hasattr(participant, "timeline"):
@@ -440,6 +465,32 @@ def get_current_match_details(summoner_name, region, champion_id):
         else:
             stats["losses"] += 1
             match_history.append(0)
+
+        try:
+            cs10 += match.timeline.frames[10].participant_frames[user.id].creep_score
+            gold10 += match.timeline.frames[10].participant_frames[user.id].gold_earned
+            games10 += 1
+
+            cs20 += match.timeline.frames[20].participant_frames[user.id].creep_score
+            gold20 += match.timeline.frames[20].participant_frames[user.id].gold_earned
+            games20 += 1
+
+            cs30 += match.timeline.frames[30].participant_frames[user.id].creep_score
+            gold30 += match.timeline.frames[30].participant_frames[user.id].gold_earned
+            games30 += 1
+        except:
+            pass
+
+    try:
+        stats["cs10"] = round(cs10 / games10, 2)
+        stats["cs20"] = round(cs20 / games20, 2)
+        stats["cs30"] = round(cs30 / games30, 2)
+        stats["gold10"] = round(gold10 / games10, 2)
+        stats["gold20"] = round(gold20 / games20, 2)
+        stats["gold30"] = round(gold30 / games30, 2)
+    except:
+        # divide by 0
+        pass
 
     build = {}
 
