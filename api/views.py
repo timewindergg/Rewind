@@ -111,8 +111,20 @@ def get_static_data(request):
             item_response['description'] = item.description
             item_response['plaintext'] = item.plaintext
             items_response[str(item.id)] = item_response
+
+        runes_response = {}
+        runes = cass.get_runes(region=region)
+        for rune in runes:
+            rune_response = {}
+            rune_response['name'] = rune.name
+            rune_response['path'] = rune.path.value
+            rune_response['shortDescription'] = rune._data[cass.core.staticdata.rune.RuneData].shortDescription #rune.short_description
+            rune_response['isKeystone'] = rune.is_keystone
+            runes_response[str(rune.id)] = rune_response
+
         response['items'] = items_response
-        
+        response['runes'] = runes_response
+
     except Exception as e:
         log.warn("failed to get static data", stack_info=True)
         log.warn(e)
