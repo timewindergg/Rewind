@@ -456,7 +456,7 @@ def get_current_match(request):
     response['blue_team'] = blue_team
     response['red_bans'] = red_bans
     response['blue_bans'] = blue_bans
-    response['creation'] = round(m.creation.timestamp())
+    response['creation'] = m.creation.timestamp
     response['queue'] = queue
     response['winrates'] = winrates
 

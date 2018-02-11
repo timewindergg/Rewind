@@ -85,6 +85,13 @@ boots = [
     3020  # Sorcerer's
 ]
 
+consumables = [
+    2055, # Vision Ward
+    2033, # Corrupting Potion
+    2032, # Hunter's Potion
+    2031, # Refillable Potion
+]
+
 def update_items():
     from . import consts as Consts
     from .models import Items

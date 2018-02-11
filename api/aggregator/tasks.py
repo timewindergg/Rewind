@@ -94,7 +94,7 @@ def aggregate_user_match(region, summoner_id, match_id):
             region=match.region.value,
             season_id=season_id,
             queue_id=data.QUEUE_IDS[match.queue],
-            timestamp=round(match.creation.timestamp()),
+            timestamp=match.creation.timestamp,
             duration=match.duration.total_seconds(),
             champ_id=user.champion.id,
             item0=items[0],
@@ -136,7 +136,7 @@ def aggregate_user_match(region, summoner_id, match_id):
             m.killing_spree = 1
         m.save()
 
-        lawn, created = MatchLawn.objects.select_for_update().get_or_create(user_id=summoner.id, region=region, date=datetime.datetime.fromtimestamp(match.creation.timestamp()))
+        lawn, created = MatchLawn.objects.select_for_update().get_or_create(user_id=summoner.id, region=region, date=datetime.datetime.fromtimestamp(match.creation.timestamp))
         if user.stats.win:
             lawn.wins += 1
         else:
