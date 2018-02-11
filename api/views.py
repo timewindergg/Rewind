@@ -331,7 +331,7 @@ def get_user_champion_stats(summoner_name, region, champion_id):
         itemset = {}
         itemset['items'] = all_items
         itemset['boots'] = boots
-        championItems['jg'] = itemset
+        championItems['jungle'] = itemset
 
         # mid
         boots = [item.item_id for item in items if item.item_type == Consts.ITEM_BOOTS and item.lane == cass.data.Lane.mid_lane.value]
