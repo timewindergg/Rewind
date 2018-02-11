@@ -3,12 +3,13 @@ from celery.contrib import rdb
 
 from django.db import transaction
 
-from api.models import ProfileStats, Matches, MatchLawn, UserChampionStats, ChampionItems, ChampionRunes, UserChampionVersusStats, UserChampionItems, UserChampionRunes, UserChampionSummoners
 import cassiopeia as cass
 from cassiopeia import data
 
 import json
 import datetime
+
+from api.models import ProfileStats, Matches, MatchLawn, UserChampionStats, ChampionItems, ChampionRunes, UserChampionVersusStats, UserChampionItems, UserChampionRunes, UserChampionSummoners
 
 import logging
 log = logging.getLogger(__name__)
@@ -286,5 +287,3 @@ def aggregate_global_stats(match):
                     champ_rune.save()
         except:
             pass
-
-

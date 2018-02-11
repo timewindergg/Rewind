@@ -7,14 +7,16 @@ from django.forms.models import model_to_dict
 from django.db import transaction
 from django.db.models import Sum, Q
 
-import os
 import cassiopeia as cass
 from cassiopeia import Champion
 from cassiopeia.core import CurrentMatch
+
+import os
 import datetime
 import time
 import json
 from functools import reduce
+from multiprocessing.dummy import Pool 
 
 from .aggregator.tasks import aggregate_users, aggregate_user_match, aggregate_global_stats
 from .models import ProfileStats, ChampionItems, UserChampionStats, Matches, MatchLawn, UserLeagues, UserChampionMasteries, UserChampionVersusStats, UserChampionItems, UserChampionRunes, UserChampionSummoners
@@ -453,15 +455,29 @@ def get_current_match(request):
 
     return JsonResponse(response)
 
+
+def load_match(match):
+    try:
+        match.load()
+        match.timeline.load()
+    except:
+        pass
+
 #
 # CURRENT_MATCH_DETAILS
 #
 def get_current_match_details(summoner_name, region, champion_id):
     s = cass.get_summoner(name=summoner_name, region=region)
     if s.exists:
-        matchlist = cass.get_match_history(summoner=s, region=region, champions=[champion_id], begin_index=0, end_index=20)
+        matchlist = cass.get_match_history(summoner=s, region=region, champions=[champion_id], begin_index=0, end_index=10)
+        len(matchlist) # to fill matchlist
     else:
         return HttpResponse(status=404)
+
+    pool = Pool(10)
+    pool.map(load_match, matchlist)
+    pool.close() 
+    pool.join() 
 
     response = {}
 
