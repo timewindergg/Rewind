@@ -169,7 +169,7 @@ def aggregate_user_match(region, summoner_id, match_id):
         ucs.total_cs += user.stats.total_minions_killed
         ucs.game_length += match.duration.total_seconds()
         ucs.gold += user.stats.gold_earned
-        ucs.lane = user.lane
+        ucs.lane = user.lane.value
         '''
         if user.lane == cass.data.Lane.top_lane:
             ucs.lane_top += 1
