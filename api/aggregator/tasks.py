@@ -96,7 +96,7 @@ def aggregate_user_match(region, summoner_id, match_id):
             queue_id=data.QUEUE_IDS[match.queue],
             timestamp=round(match.creation.timestamp()),
             duration=match.duration.total_seconds(),
-            champion_id=user.champion.id,
+            champ_id=user.champion.id,
             item0=items[0],
             item1=items[1],
             item2=items[2],

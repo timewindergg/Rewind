@@ -364,11 +364,18 @@ def get_user_champion_stats(summoner_name, region, champion_id):
         log.warn("failed to get champ_summs", stack_info=True)
         return HttpResponse(status=500)
 
+    try:
+        matches = Matches.objects.filter(user_id=summoner.id, region=region, champ_id=champion_id).order_by('-timestamp')[:10]
+    except:
+        log.warn("failed to get recent matches", stack_info=True)
+        return HttpResponse(status=500)
+
     response['championStats'] = list(champ_stats.values())
     response['championMatchups'] = list(champ_versus.values())
     response['championItems'] = championItems
     response['championRunes'] = list(champ_runes.values())
     response['championSummoners'] = list(champ_summs.values())
+    response['recentMatches'] = list(matches.values())
 
     return JsonResponse(response)
 
