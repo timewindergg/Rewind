@@ -2,12 +2,14 @@ from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.cache import cache_page
 from django.forms.models import model_to_dict
 from django.db import transaction
 from django.db.models import Sum, Q
 
 import os
 import cassiopeia as cass
+from cassiopeia import Champion
 from cassiopeia.core import CurrentMatch
 import datetime
 import time
@@ -68,6 +70,11 @@ cass.apply_settings({
     "RiotAPI": {
       "api_key": os.environ["RIOT_API_KEY"]
     },
+
+    "ChampionGG": {
+      "package": "cassiopeia_championgg",
+      "api_key": os.environ['CHAMPIONGG_API_KEY']
+    },
   },
 
   "logging": {
@@ -93,9 +100,10 @@ def get_champion_id(name):
 #
 # STATIC DATA
 #
+@cache_page(60 * 60 * 24 * 7)
 @require_http_methods(["GET"])
-def get_static_data(request):
-    region = normalize_region(request.GET['region'])
+def get_static_data(request, region):
+    region = normalize_region(region)
 
     response = {}
     try:
@@ -122,8 +130,31 @@ def get_static_data(request):
             rune_response['isKeystone'] = rune.is_keystone
             runes_response[str(rune.id)] = rune_response
 
+        skills_response = {}
+        champions = cass.get_champions(region=region)
+        for champion in champions:
+            skills = ['q', 'w', 'e', 'r']
+            skill_response = {
+                'p': {},
+                'q': {},
+                'w': {},
+                'e': {},
+                'r': {}
+            }
+            skill_response['p']['img'] = champion.passive.image_info.full
+            skill_response['p']['name'] = champion.passive.name
+            skill_response['p']['description'] = champion.passive.sanitized_description
+            for skill in skills:
+                skill_response[skill]['img'] = champion.spells[0].image_info.full
+                skill_response[skill]['name'] = champion.spells[0].name
+                skill_response[skill]['description'] = champion.spells[0].sanitized_description
+                skill_response[skill]['cooldowns'] = champion.spells[0].cooldowns
+                skill_response[skill]['costs'] = champion.spells[0].costs
+            skills_response[str(champion.id)] = skill_response
+
         response['items'] = items_response
         response['runes'] = runes_response
+        response['championSkills'] = skills_response
 
     except Exception as e:
         log.warn("failed to get static data", stack_info=True)
@@ -166,7 +197,7 @@ def update_summoner_helper(s, region):
                 user_champion.chest_granted = cmastery.chest_granted
                 user_champion.save()
                 
-        transaction.on_commit(lambda: aggregate_users.delay(summoner.user_id, region, 500))
+        transaction.on_commit(lambda: aggregate_users.delay(summoner.user_id, region))
 
 
 @csrf_exempt
