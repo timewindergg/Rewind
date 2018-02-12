@@ -556,6 +556,11 @@ def get_current_match_details(summoner_name, region, champion_id):
         except:
             pass
 
+    stats["kills"] /= 10
+    stats["deaths"] /= 10
+    stats["assists"] /= 10
+    stats["totalCs"] /= 10
+
     try:
         stats["cs10"] = round(cs10 / games10, 2)
         stats["cs20"] = round(cs20 / games20, 2)
