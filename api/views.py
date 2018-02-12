@@ -243,7 +243,7 @@ def get_summoner(request):
         return HttpResponse("Error retrieving champion masteries", status=500)
 
     try:
-        userLeagues = UserLeagues.objects.filter(user_id=s.id, region=region)
+        user_leagues = UserLeagues.objects.filter(user_id=s.id, region=region)
     except:
         log.warn("ProfileStats not found after update in get_summoner")
         return HttpResponse("Error retrieving leagues", status=500)
@@ -262,7 +262,7 @@ def get_summoner(request):
 
     response = model_to_dict(summoner)
     response['championMasteries'] = list(cmasteries.values())
-    response['leagues'] = list(userLeagues.values())
+    response['leagues'] = list(user_leagues.values())
     response['lawn'] = list(lawn.values())
     response['championStats'] = list(champ_stats.values())
 
@@ -488,6 +488,15 @@ def get_current_match_details(summoner_name, region, champion_id):
 
     response = {}
 
+    q = {}
+    leagues = cass.get_league_positions(summoner=s, region=region)
+    for league in leagues:
+        q[league.queue.value] = {
+            'tier': league.tier.value,
+            'division': league.division.value,
+            'points': league.league_points
+        }
+
     # summoner stats for past 20 matches on a champion
     stats = {
         "kills": 0,
@@ -578,6 +587,7 @@ def get_current_match_details(summoner_name, region, champion_id):
 
     response['stats'] = stats
     response['build'] = build
+    response['leagues'] = q
 
     return response
 
