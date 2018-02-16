@@ -120,6 +120,7 @@ def get_static_data(request, region):
             item_response['sellGold'] = item.gold.sell
             item_response['description'] = item.description
             item_response['plaintext'] = item.plaintext
+            item_response['from'] = [it.id for it in item.builds_from]
             items_response[str(item.id)] = item_response
 
         runes_response = {}
@@ -146,12 +147,12 @@ def get_static_data(request, region):
             skill_response['p']['img'] = champion.passive.image_info.full
             skill_response['p']['name'] = champion.passive.name
             skill_response['p']['description'] = champion.passive.sanitized_description
-            for skill in skills:
-                skill_response[skill]['img'] = champion.spells[0].image_info.full
-                skill_response[skill]['name'] = champion.spells[0].name
-                skill_response[skill]['description'] = champion.spells[0].sanitized_description
-                skill_response[skill]['cooldowns'] = champion.spells[0].cooldowns
-                skill_response[skill]['costs'] = champion.spells[0].costs
+            for i, skill in enumerate(skills):
+                skill_response[skill]['img'] = champion.spells[i].image_info.full
+                skill_response[skill]['name'] = champion.spells[i].name
+                skill_response[skill]['description'] = champion.spells[i].sanitized_description
+                skill_response[skill]['cooldowns'] = champion.spells[i].cooldowns
+                skill_response[skill]['costs'] = champion.spells[i].costs
             skills_response[str(champion.id)] = skill_response
 
         response['items'] = items_response
