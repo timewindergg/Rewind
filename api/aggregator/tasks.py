@@ -85,8 +85,8 @@ def aggregate_user_match(region, summoner_id, match_id):
 
         items = [item.id if item else 0 for item in user.stats.items]
         
-        red_team = [p.to_json() for p in match.red_team.participants]
-        blue_team = [p.to_json() for p in match.blue_team.participants]
+        #red_team = [p.to_json() for p in match.red_team.participants]
+        #blue_team = [p.to_json() for p in match.blue_team.participants]
         
         m, created = Matches.objects.select_for_update().get_or_create(
             user_id=summoner.id,
@@ -122,8 +122,10 @@ def aggregate_user_match(region, summoner_id, match_id):
         m.winner = 100 if match.blue_team.win else 200
         m.won = user.stats.win
         m.is_remake = match.is_remake
-        m.red_team = json.dumps(red_team)
-        m.blue_team = json.dumps(blue_team)
+        #m.red_team = json.dumps(red_team)
+        #m.blue_team = json.dumps(blue_team)
+        m.red_team = match.red_team.to_json()
+        m.blue_team = match.blue_team.to_json()
         if user.stats.penta_kills > 0:
             m.killing_spree = 5
         elif user.stats.quadra_kills > 0:
