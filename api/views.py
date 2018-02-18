@@ -497,6 +497,8 @@ def get_current_match_details(summoner_name, region, champion_id):
             'division': league.division.value,
             'points': league.league_points
         }
+        if league.promos != None:
+            q[league.queue.value]['promos'] = league.promos.progress
 
     # summoner stats for past 20 matches on a champion
     stats = {
