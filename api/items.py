@@ -72,7 +72,7 @@ full_items = [
     3142, # Youmuu's Ghostblade
     3050, # Zeke's Convergence
     3157, # Zhonya's Hourglass
-    3512  # Zz'Rot Portal
+    3512, # Zz'Rot Portal
 ]
 
 boots = [
@@ -80,9 +80,9 @@ boots = [
     3117, # Mobility
     3009, # Swiftness
     3158, # Lucidity
-    3139, # Mercurials
+    3111, # Mercury
     3047, # Tabi
-    3020  # Sorcerer's
+    3020, # Sorcerer's
 ]
 
 consumables = [

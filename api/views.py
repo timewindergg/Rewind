@@ -631,8 +631,13 @@ def get_match_timeline(request):
     region = normalize_region(request.GET['region'])
     match_id = int(request.GET['match_id'])
 
-    match = cass.get_match(id=match_id, region=region).load()
-    timeline = match.timeline.load()
+    try:
+        match = cass.get_match(id=match_id, region=region)
+        timeline = match.timeline
+        match.load()
+        timeline.load()
+    except:
+        pass
 
     response = {}
     response['timeline'] = json.loads(timeline.to_json())
