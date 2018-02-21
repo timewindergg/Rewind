@@ -210,6 +210,7 @@ class Matches(models.Model):
     timestamp = models.IntegerField(default=0)
     duration = models.IntegerField(default=0)
     champ_id = models.IntegerField(default=0)
+    participant_id = models.IntegerField(default=0)
     item0 = models.IntegerField(default=0)
     item1 = models.IntegerField(default=0)
     item2 = models.IntegerField(default=0)

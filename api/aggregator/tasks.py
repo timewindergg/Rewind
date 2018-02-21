@@ -98,6 +98,7 @@ def aggregate_user_match(region, summoner_id, match_id):
         m.timestamp = match.creation.timestamp
         m.duration = match.duration.total_seconds()
         m.champ_id = user.champion.id
+        m.participant_id = user.id
         m.item0 = items[0]
         m.item1 = items[1]
         m.item2 = items[2]

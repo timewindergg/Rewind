@@ -72,11 +72,6 @@ cass.apply_settings({
     "RiotAPI": {
       "api_key": os.environ["RIOT_API_KEY"]
     },
-
-    "ChampionGG": {
-      "package": "cassiopeia_championgg",
-      "api_key": os.environ['CHAMPIONGG_API_KEY']
-    },
   },
 
   "logging": {
@@ -134,8 +129,15 @@ def get_static_data(request, region):
             runes_response[str(rune.id)] = rune_response
 
         skills_response = {}
+        champion_response = {}
         champions = cass.get_champions(region=region)
         for champion in champions:
+            ch = {}
+            ch['name'] = champion.name
+            ch['title'] = champion.title
+            ch['img'] = champion.image.full
+            champion_response[str(champion.id)] = ch
+
             skills = ['q', 'w', 'e', 'r']
             skill_response = {
                 'p': {},
@@ -158,6 +160,7 @@ def get_static_data(request, region):
         response['items'] = items_response
         response['runes'] = runes_response
         response['championSkills'] = skills_response
+        response['champions'] = champion_response
 
     except Exception as e:
         log.warn("failed to get static data", stack_info=True)
@@ -303,7 +306,10 @@ def get_user_champion_stats(summoner_name, region, champion_id):
     response = {}
 
     try:
+        champ_stats_response = {}
         champ_stats = UserChampionStats.objects.filter(user_id=summoner.id, region=region, champ_id=champion_id)
+        for stat in champ_stats:
+            champ_stats_response[stat.lane] = model_to_dict(stat)
     except:
         log.warn("failed to get champ_stats", stack_info=True)
         return HttpResponse(status=500)
@@ -366,12 +372,13 @@ def get_user_champion_stats(summoner_name, region, champion_id):
         return HttpResponse(status=500)
 
     try:
-        matches = Matches.objects.filter(user_id=summoner.id, region=region, champ_id=champion_id).order_by('-timestamp')[:10]
+        matches = Matches.objects.filter(user_id=summoner.id, region=region, champ_id=champion_id).order_by('-timestamp')[:5]
     except:
         log.warn("failed to get recent matches", stack_info=True)
         return HttpResponse(status=500)
 
-    response['championStats'] = list(champ_stats.values())
+    response['championId'] = champion_id
+    response['championStats'] = champ_stats_response
     response['championMatchups'] = list(champ_versus.values())
     response['championItems'] = championItems
     response['championRunes'] = list(champ_runes.values())
