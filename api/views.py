@@ -322,7 +322,7 @@ def get_user_champion_stats(summoner_name, region, champion_id):
 
     try:
         championItems = {}
-        items = UserChampionItems.objects.raw('SELECT * FROM api_userchampionitems ci INNER JOIN api_items i ON ci.item_id = i.item_id WHERE ci.champ_id = %s AND ci.season_id = 11 ORDER BY ci.occurence DESC' % champion_id)
+        items = UserChampionItems.objects.raw('SELECT * FROM api_userchampionitems ci INNER JOIN api_items i ON ci.item_id = i.item_id WHERE ci.user_id = %s AND ci.champ_id = %s AND ci.season_id = 11 ORDER BY ci.occurence DESC' % (summoner.id, champion_id))
 
         # top
         boots = [item.item_id for item in items if item.item_type == Consts.ITEM_BOOTS and item.lane == cass.data.Lane.top_lane.value]
@@ -330,7 +330,7 @@ def get_user_champion_stats(summoner_name, region, champion_id):
         itemset = {}
         itemset['items'] = all_items
         itemset['boots'] = boots
-        championItems['top'] = itemset
+        championItems['TOP_LANE'] = itemset
 
         # jungle
         boots = [item.item_id for item in items if item.item_type == Consts.ITEM_BOOTS and item.lane == cass.data.Lane.jungle.value]
@@ -338,7 +338,7 @@ def get_user_champion_stats(summoner_name, region, champion_id):
         itemset = {}
         itemset['items'] = all_items
         itemset['boots'] = boots
-        championItems['jungle'] = itemset
+        championItems['JUNGLE'] = itemset
 
         # mid
         boots = [item.item_id for item in items if item.item_type == Consts.ITEM_BOOTS and item.lane == cass.data.Lane.mid_lane.value]
@@ -346,7 +346,7 @@ def get_user_champion_stats(summoner_name, region, champion_id):
         itemset = {}
         itemset['items'] = all_items
         itemset['boots'] = boots
-        championItems['mid'] = itemset
+        championItems['MID_LANE'] = itemset
 
         # bot
         boots = [item.item_id for item in items if item.item_type == Consts.ITEM_BOOTS and item.lane == cass.data.Lane.bot_lane.value]
@@ -354,7 +354,7 @@ def get_user_champion_stats(summoner_name, region, champion_id):
         itemset = {}
         itemset['items'] = all_items
         itemset['boots'] = boots
-        championItems['bot'] = itemset
+        championItems['BOT_LANE'] = itemset
     except:
         log.warn("failed to get champ_items", stack_info=True)
         return HttpResponse(status=500)
