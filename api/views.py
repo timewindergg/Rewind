@@ -19,7 +19,7 @@ from functools import reduce
 from multiprocessing.dummy import Pool 
 
 from .aggregator.tasks import aggregate_users, aggregate_user_match, aggregate_global_stats
-from .models import ProfileStats, ChampionItems, UserChampionStats, Matches, MatchLawn, UserLeagues, UserChampionMasteries, UserChampionVersusStats, UserChampionItems, UserChampionRunes, UserChampionSummoners
+from .models import ProfileStats, ChampionItems, ChampionStats, UserChampionStats, Matches, MatchLawn, UserLeagues, UserChampionMasteries, UserChampionVersusStats, UserChampionItems, UserChampionRunes, UserChampionSummoners
 from . import items as Items
 from . import consts as Consts
 
@@ -586,7 +586,7 @@ def get_current_match_details(summoner_name, region, champion_id):
 
     # get recommended build
     try:
-        items = ChampionItems.objects.raw('SELECT * FROM api_championitems ci INNER JOIN api_items i ON ci.item_id = i.item_id WHERE ci.champ_id = %s ORDER BY ci.occurence DESC' % champion_id)
+        items = ChampionItems.objects.raw('SELECT * FROM api_championitems ci INNER JOIN api_items i ON ci.item_id = i.item_id WHERE ci.user_id = %s AND ci.champ_id = %s ORDER BY ci.occurence DESC' % (s.id, champion_id))
         boots = [item.item_id for item in items if item.item_type == Consts.ITEM_BOOTS]
         all_items = [item.item_id for item in items if item.item_type == Consts.ITEM_CORE]
         core = all_items[:3]
@@ -599,6 +599,9 @@ def get_current_match_details(summoner_name, region, champion_id):
     build['boots'] = boots
     build['core'] = core
     build['situational'] = situational
+
+    champ_stats, created = ChampionStats.objects.get_or_create(champ_id=champion_id)
+    build['totalGamesAggregated'] = champ_stats.total_games
 
     response['stats'] = stats
     response['build'] = build

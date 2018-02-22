@@ -9,7 +9,7 @@ from cassiopeia import data
 import json
 import datetime
 
-from api.models import ProfileStats, Matches, MatchLawn, UserChampionStats, ChampionItems, ChampionRunes, UserChampionVersusStats, UserChampionItems, UserChampionRunes, UserChampionSummoners
+from api.models import ProfileStats, Matches, MatchLawn, UserChampionStats, ChampionStats, ChampionItems, ChampionRunes, UserChampionVersusStats, UserChampionItems, UserChampionRunes, UserChampionSummoners
 
 import logging
 log = logging.getLogger(__name__)
@@ -279,6 +279,10 @@ def aggregate_user_match(region, summoner_id, match_id):
 def aggregate_global_stats(match):
     for participant in match.participants:
         champ_id = participant.champion.id
+        with transaction.atomic():
+            champ_stats, created = ChampionStats.objects.select_for_update().get_or_create(champ_id=user.champion.id)
+            champ_stats.total_games += 1
+            champ_stats.save()
         for item in participant.stats.items:
             if item:
                 with transaction.atomic():

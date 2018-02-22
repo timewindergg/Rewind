@@ -7,7 +7,7 @@ class Items(models.Model):
 
 class ChampionStats(models.Model):
     champ_id = models.IntegerField()
-    total_games = models.IntegerField()
+    total_games = models.IntegerField(default=0)
 
 
 class ChampionItems(models.Model):
