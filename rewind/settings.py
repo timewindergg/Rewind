@@ -98,21 +98,10 @@ WSGI_APPLICATION = 'rewind.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/1.7/ref/settings/#databases
-
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'timewinder',                      
-        'USER': 'timewinder_admin',
-        'PASSWORD': 'twnumba1',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
+DATABASES = {}
 
 import dj_database_url
-DATABASES['default'] =  dj_database_url.config()
+DATABASES['default'] =  dj_database_url.config(default='postgres://localhost:5432/timewinder')
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/
