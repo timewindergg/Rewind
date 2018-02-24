@@ -24,7 +24,13 @@ DEBUG = False
 
 TEMPLATE_DEBUG = True
 
-ALLOWED_HOSTS = ["https://timewinder-rewind.herokuapp.com/"]
+ALLOWED_HOSTS = ['*']
+
+# Honor the 'X-Forwarded-Proto' header for request.is_secure()
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Allow all host headers
+ALLOWED_HOSTS = ['*']
 
 
 # Logging
@@ -97,6 +103,7 @@ WSGI_APPLICATION = 'rewind.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.7/ref/settings/#databases
 
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -107,6 +114,10 @@ DATABASES = {
         'PORT': '5432',
     }
 }
+
+import dj_database_url
+DATABASES['default'] =  dj_database_url.config()
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/
