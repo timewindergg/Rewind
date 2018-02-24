@@ -93,6 +93,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
 )
 
 ROOT_URLCONF = 'rewind.urls'
@@ -117,7 +118,6 @@ DATABASES = {
 
 import dj_database_url
 DATABASES['default'] =  dj_database_url.config()
-
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/
