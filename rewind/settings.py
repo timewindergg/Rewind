@@ -68,6 +68,7 @@ LOGGING = {
 
 CELERY_BROKER_URL = os.environ.get("REDIS_URL")
 CELERY_IMPORTS = ('api.aggregator.tasks',)
+CELERY_REDIS_MAX_CONNECTIONS = 20
 
 INSTALLED_APPS = (
     'django.contrib.admin',

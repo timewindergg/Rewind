@@ -280,7 +280,7 @@ def aggregate_global_stats(match):
     for participant in match.participants:
         champ_id = participant.champion.id
         with transaction.atomic():
-            champ_stats, created = ChampionStats.objects.select_for_update().get_or_create(champ_id=user.champion.id)
+            champ_stats, created = ChampionStats.objects.select_for_update().get_or_create(champ_id=champ_id)
             champ_stats.total_games += 1
             champ_stats.save()
         for item in participant.stats.items:
