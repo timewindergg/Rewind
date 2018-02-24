@@ -20,11 +20,11 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 SECRET_KEY = '%rx_o^y*hx+3c593#ep6%b40y-5u5_($13x6lktqw^i8ng+&2f'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 TEMPLATE_DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["https://timewinder-rewind.herokuapp.com/"]
 
 
 # Logging

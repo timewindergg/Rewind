@@ -200,6 +200,9 @@ class MatchLawn(models.Model):
     wins = models.IntegerField(default=0)
     losses = models.IntegerField(default=0)
 
+    class Meta:
+        unique_together = (("user_id", "region", "date"),)
+
 
 class Matches(models.Model):
     user_id = models.IntegerField()
