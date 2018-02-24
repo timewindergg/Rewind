@@ -141,8 +141,8 @@ print(STATIC_ROOT)
 STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [
-    os.path.join(STATIC_ROOT, "static"),
-    os.path.join(STATIC_ROOT, "static/roles"),
-    os.path.join(STATIC_ROOT, "static/masteries"),
-    os.path.join(STATIC_ROOT, "static/tiers")
+    os.path.join(PROJECT_ROOT, "static"),
+    os.path.join(PROJECT_ROOT, "static/roles"),
+    os.path.join(PROJECT_ROOT, "static/masteries"),
+    os.path.join(PROJECT_ROOT, "static/tiers")
 ]
