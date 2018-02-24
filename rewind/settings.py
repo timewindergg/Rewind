@@ -67,7 +67,7 @@ LOGGING = {
 # Application definition
 
 CELERY_BROKER_URL = 'amqp://localhost'
-CELERY_BROKER_URL = os.environ.get("RABBITMQ_BIGWIG_URL")
+CELERY_BROKER_URL = os.environ.get("REDIS_URL")
 CELERY_IMPORTS = ('api.aggregator.tasks',)
 
 INSTALLED_APPS = (
