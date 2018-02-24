@@ -21,5 +21,6 @@ Pillow==4.3.0
 psycopg2==2.7.3.2
 pycurl==7.43.0
 pytz==2017.3
+redis==2.10.6
 vine==1.1.4
 whitenoise==3.3.1

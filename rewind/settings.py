@@ -25,9 +25,7 @@ ALLOWED_HOSTS = ['*']
 # Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# Allow all host headers
-ALLOWED_HOSTS = ['*']
-
+APPEND_SLASH = True
 
 # Logging
 
@@ -69,6 +67,7 @@ LOGGING = {
 # Application definition
 
 CELERY_BROKER_URL = 'amqp://localhost'
+CELERY_BROKER_URL = os.environ.get("RABBITMQ_BIGWIG_URL")
 CELERY_IMPORTS = ('api.aggregator.tasks',)
 
 INSTALLED_APPS = (
@@ -136,13 +135,15 @@ USE_TZ = True
 import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+print(PROJECT_ROOT)
 
 STATIC_ROOT = os.path.join(PROJECT_ROOT, 'staticfiles')
+print(STATIC_ROOT)
 STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [
-    os.path.join(PROJECT_ROOT, "static"),
-    os.path.join(PROJECT_ROOT, "static/roles"),
-    os.path.join(PROJECT_ROOT, "static/masteries"),
-    os.path.join(PROJECT_ROOT, "static/tiers")
+    os.path.join(STATIC_ROOT, "static"),
+    os.path.join(STATIC_ROOT, "static/roles"),
+    os.path.join(STATIC_ROOT, "static/masteries"),
+    os.path.join(STATIC_ROOT, "static/tiers")
 ]
