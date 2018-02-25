@@ -14,4 +14,4 @@ urlpatterns = [
     path('get_current_match_details_by_batch/', views.get_current_match_details_by_batch),
     path('update_summoner/', views.update_summoner),
     path('get_static_data/<region>/', views.get_static_data),
-] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+] + static(settings.STATIC_URL, document_root=settings.DEV_STATIC_ROOT)

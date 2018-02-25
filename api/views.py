@@ -600,7 +600,8 @@ def get_current_match_details(summoner_name, region, champion_id):
     build['core'] = core
     build['situational'] = situational
 
-    champ_stats, created = ChampionStats.objects.get_or_create(champ_id=champion_id)
+    with transaction.atomic():
+        champ_stats, created = ChampionStats.objects.select_for_update().get_or_create(champ_id=champion_id)
     build['totalGamesAggregated'] = champ_stats.total_games
 
     response['stats'] = stats

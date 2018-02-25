@@ -1,12 +1,12 @@
 from django.db import models
 
 class Items(models.Model):
-    item_id = models.IntegerField()
+    item_id = models.IntegerField(primary_key=True)
     item_type = models.IntegerField()
 
 
 class ChampionStats(models.Model):
-    champ_id = models.IntegerField()
+    champ_id = models.IntegerField(primary_key=True)
     total_games = models.IntegerField(default=0)
 
 

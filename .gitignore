@@ -4,3 +4,4 @@ api/aggregator/__pycache__
 rewind/__pycache__
 rewind/bin
 rewind/lib
+rewind/staticfiles

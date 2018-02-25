@@ -69,6 +69,7 @@ LOGGING = {
 CELERY_BROKER_URL = os.environ.get("REDIS_URL")
 CELERY_IMPORTS = ('api.aggregator.tasks',)
 CELERY_REDIS_MAX_CONNECTIONS = 20
+BROKER_POOL_LIMIT = 0
 
 INSTALLED_APPS = (
     'django.contrib.admin',
@@ -123,10 +124,8 @@ USE_TZ = True
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-print(PROJECT_ROOT)
-
 STATIC_ROOT = os.path.join(PROJECT_ROOT, 'staticfiles')
-print(STATIC_ROOT)
+DEV_STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static')
 STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [
