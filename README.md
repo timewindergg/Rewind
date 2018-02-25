@@ -3,6 +3,8 @@ Timewinder Rewind
 TODO:
 - Include timeline stats in aggregations (Results in 2x API calls and processing time, check performance scalability)
 
+Available on `https://timewinder-rewind.herokuapp.com/`
+
 Setup:
 1. Create a new conda virtual env with python3.6
 2. `pip install -r requirements.txt`
