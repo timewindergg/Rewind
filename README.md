@@ -18,9 +18,12 @@ DB setup:
 ```
 3. Run `./manage.py migrate` to apply migrations
 
-Redis setup:
+Redis celery setup:
 1. `brew install redis`
-2. Write `export REDIS_URL="redis://localhost:6379/0"` to .bash_profile
+2. Write the following to .bash_profile:
+	- `export REDIS_URL="redis://localhost:6379/0"`
+	- `export MAX_CONNECTIONS=20`
+	- `export BROKER_POOL_LIMIT=10` 
 3. Start the redis server! `redis-server /usr/local/etc/redis.conf`
 ~~4. Start a worker! `celery -A rewind worker -l warning`~~
 
