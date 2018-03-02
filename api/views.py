@@ -58,12 +58,12 @@ cass.apply_settings({
           "League": datetime.timedelta(hours=6),
           "ChallengerLeague": datetime.timedelta(hours=6),
           "MasterLeague": datetime.timedelta(hours=6),
-          "Match": datetime.timedelta(days=3),
-          "Timeline": datetime.timedelta(days=1),
-          "Summoner": datetime.timedelta(days=1),
+          "Match": 0,
+          "Timeline": 0,
+          "Summoner": datetime.timedelta(minutes=2),
           "ShardStatus": datetime.timedelta(hours=1),
-          "CurrentMatch": -1,
-          "FeaturedMatches": -1
+          "CurrentMatch": 0,
+          "FeaturedMatches": 0
       }
     },
 
