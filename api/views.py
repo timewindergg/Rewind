@@ -16,7 +16,7 @@ import datetime
 import time
 import json
 from functools import reduce
-from multiprocessing.dummy import Pool 
+from multiprocessing.dummy import Pool
 
 from .aggregator.tasks import aggregate_users, aggregate_user_match, aggregate_global_stats
 from .models import ProfileStats, ChampionItems, ChampionStats, UserChampionStats, Matches, MatchLawn, UserLeagues, UserChampionMasteries, UserChampionVersusStats, UserChampionItems, UserChampionRunes, UserChampionSummoners
@@ -105,7 +105,7 @@ def get_static_data(request, region):
     response = {}
     try:
         response['version'] = cass.get_version(region=region)
-        
+
         items_response = {}
         items = cass.get_items(region=region)
         for item in items:
@@ -166,7 +166,7 @@ def get_static_data(request, region):
         log.warn("failed to get static data", stack_info=True)
         log.warn(e)
         return HttpResponse(status=500)
-        
+
     return JsonResponse(response)
 
 #
@@ -202,7 +202,7 @@ def update_summoner_helper(s, region):
                 user_champion.points_to_next = cmastery.points_until_next_level
                 user_champion.chest_granted = cmastery.chest_granted
                 user_champion.save()
-                
+
         transaction.on_commit(lambda: aggregate_users.delay(summoner.user_id, region))
 
 
@@ -425,7 +425,7 @@ def get_current_match(request):
     response = {}
     winrates = {}
 
-    blue_team_champs = [p.champion.id for p in m.teams[0].participants] 
+    blue_team_champs = [p.champion.id for p in m.teams[0].participants]
     red_team_champs = [p.champion.id for p in m.teams[1].participants]
 
     red_team = []
@@ -451,8 +451,8 @@ def get_current_match(request):
         winrate = {}
         for c in cvs:
             winrate[c['enemy_champ_id']] = c
-        winrates[str(participant.champion.id)] = winrate    
-        
+        winrates[str(participant.champion.id)] = winrate
+
     blue_bans = [v.id for k, v in m.teams[0].bans.items()]
     red_bans = [v.id for k, v in m.teams[1].bans.items()]
 
@@ -491,8 +491,8 @@ def get_current_match_details(summoner_name, region, champion_id):
 
     pool = Pool(10)
     pool.map(load_match, matchlist)
-    pool.close() 
-    pool.join() 
+    pool.close()
+    pool.join()
 
     response = {}
 
@@ -586,7 +586,7 @@ def get_current_match_details(summoner_name, region, champion_id):
 
     # get recommended build
     try:
-        items = ChampionItems.objects.raw('SELECT * FROM api_championitems ci INNER JOIN api_items i ON ci.item_id = i.item_id WHERE ci.user_id = %s AND ci.champ_id = %s ORDER BY ci.occurence DESC' % (s.id, champion_id))
+        items = ChampionItems.objects.raw('SELECT * FROM api_championitems ci INNER JOIN api_items i ON ci.item_id = i.item_id AND ci.champ_id = %s ORDER BY ci.occurence DESC' % champion_id)
         boots = [item.item_id for item in items if item.item_type == Consts.ITEM_BOOTS]
         all_items = [item.item_id for item in items if item.item_type == Consts.ITEM_CORE]
         core = all_items[:3]
@@ -595,7 +595,7 @@ def get_current_match_details(summoner_name, region, champion_id):
         boots = []
         core = []
         situational = []
-    
+
     build['boots'] = boots
     build['core'] = core
     build['situational'] = situational
@@ -655,5 +655,5 @@ def get_match_timeline(request):
     response = {}
     response['timeline'] = json.loads(timeline.to_json())
     response['match'] = json.loads(match.to_json())
-    
+
     return JsonResponse(response)
