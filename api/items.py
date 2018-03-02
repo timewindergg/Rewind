@@ -75,6 +75,18 @@ full_items = [
     3512, # Zz'Rot Portal
 ]
 
+ornnable = [
+    3001, # Abyssal Mask
+    3190, # Locket of the Iron Solari
+    3068, # Sunfire Cape
+    3031, # Infinity Edge
+    3107, # Redemption
+    3071, # Black Cleaver
+    3078, # Trinity Force
+    3090, # Wooglet's Witchcap
+    3157, # Zhonya's Hourglass
+]
+
 boots = [
     3006, # Berserkers
     3117, # Mobility
@@ -95,12 +107,13 @@ consumables = [
 def update_items():
     from . import consts as Consts
     from .models import Items
-    for item in full_items:
-        Items.objects.get_or_create(item_id=item, item_type=Consts.ITEM_CORE)
+    import cassiopeia as cass
+
+    items = cass.get_items(region='NA')
+
+    for item in items:
+        if item.id in ornnable or item.gold.total > 1200 and item.builds_into == []:
+            Items.objects.get_or_create(item_id=item.id, item_type=Consts.ITEM_CORE)
 
     for boot in boots:
         Items.objects.get_or_create(item_id=boot, item_type=Consts.ITEM_BOOTS)
-
-
-
-
