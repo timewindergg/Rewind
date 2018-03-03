@@ -34,34 +34,34 @@ cass.apply_settings({
   "pipeline": {
     "Cache": {
       "expirations": {
-          "ChampionStatusData": datetime.timedelta(hours=6),
-          "ChampionStatusListData": datetime.timedelta(hours=6),
+          "ChampionStatusData": 0,
+          "ChampionStatusListData": 0,
           "Realms": datetime.timedelta(hours=6),
-          "Versions": datetime.timedelta(hours=6),
-          "Champion": datetime.timedelta(days=20),
-          "Rune": datetime.timedelta(days=20),
-          "Item": datetime.timedelta(days=20),
-          "SummonerSpell": datetime.timedelta(days=20),
-          "Map": datetime.timedelta(days=20),
-          "ProfileIcon": datetime.timedelta(days=20),
-          "Locales": datetime.timedelta(days=20),
-          "LanguageStrings": datetime.timedelta(days=20),
-          "SummonerSpells": datetime.timedelta(days=20),
-          "Items": datetime.timedelta(days=20),
-          "Champions": datetime.timedelta(days=20),
-          "Runes": datetime.timedelta(days=20),
-          "Maps": datetime.timedelta(days=20),
-          "ProfileIcons": datetime.timedelta(days=20),
-          "ChampionMastery": datetime.timedelta(days=7),
-          "ChampionMasteries": datetime.timedelta(days=7),
-          "LeagueEntries": datetime.timedelta(hours=6),
-          "League": datetime.timedelta(hours=6),
-          "ChallengerLeague": datetime.timedelta(hours=6),
-          "MasterLeague": datetime.timedelta(hours=6),
+          "Versions": 0,
+          "Champion": 0,
+          "Rune": 0,
+          "Item": 0,
+          "SummonerSpell": 0,
+          "Map": 0,
+          "ProfileIcon": 0,
+          "Locales": 0,
+          "LanguageStrings": 0,
+          "SummonerSpells": 0,
+          "Items": 0,
+          "Champions": 0,
+          "Runes": 0,
+          "Maps": 0,
+          "ProfileIcons": 0,
+          "ChampionMastery": 0,
+          "ChampionMasteries": 0,
+          "LeagueEntries": 0,
+          "League": 0,
+          "ChallengerLeague": 0,
+          "MasterLeague": 0,
           "Match": 0,
           "Timeline": 0,
-          "Summoner": datetime.timedelta(minutes=2),
-          "ShardStatus": datetime.timedelta(hours=1),
+          "Summoner": 0,
+          "ShardStatus": 0,
           "CurrentMatch": 0,
           "FeaturedMatches": 0
       }
@@ -81,6 +81,8 @@ cass.apply_settings({
     "core": "WARNING"
   }
 })
+
+cass_cache = cass.configuration.settings.pipeline._cache
 
 #
 # HELPER FUNCTIONS
@@ -419,8 +421,11 @@ def get_current_match(request):
 
     try:
         m = cass.get_current_match(summoner=s, region=region)
+        if not m.exists:
+            return HttpResponse(status=404)
     except:
         return HttpResponse(status=404)
+
 
     response = {}
     winrates = {}

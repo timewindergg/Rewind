@@ -70,6 +70,7 @@ CELERY_BROKER_URL = os.environ.get("REDIS_URL")
 CELERY_IMPORTS = ('api.aggregator.tasks',)
 CELERY_REDIS_MAX_CONNECTIONS = os.environ.get("MAX_CONNECTIONS")
 BROKER_POOL_LIMIT = os.environ.get("BROKER_POOL_LIMIT")
+CELERYD_PREFETCH_MULTIPLIER = 1
 
 INSTALLED_APPS = (
     'django.contrib.admin',

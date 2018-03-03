@@ -2,10 +2,10 @@ from celery import shared_task
 from django.db import transaction
 
 import cassiopeia as cass
-from cassiopeia import data
 
 import json
 import datetime
+from multiprocessing.dummy import Pool
 
 from api.models import ProfileStats, Matches, MatchLawn, UserChampionStats, ChampionStats, ChampionItems, ChampionRunes, UserChampionVersusStats, UserChampionItems, UserChampionRunes, UserChampionSummoners
 
@@ -29,16 +29,25 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
 
         recent_matches = cass.get_match_history(summoner=summoner, region=region, begin_index=index, end_index=index+100, seasons=[cass.data.Season.from_id(11)])
 
+        batch = []
         for match in recent_matches:
             if profile.last_match_updated == match.id:
                 updated = True
                 break
 
-            aggregate_user_match.delay(region=region, summoner_id=summoner_id, match_id=match.id)
+            #aggregate_user_match.delay(region=region, summoner_id=summoner_id, match_id=match.id)
+            batch.append(match.id)
+
+            if len(batch) == 20:
+                aggregate_batched_matches.delay(batch, region, summoner_id)
+                batch = []
             count += 1
 
         index += 100
 
+        if len(batch) > 0:
+            aggregate_batched_matches.delay(batch, region, summoner_id)
+            
         if len(recent_matches) == 0:
             break
 
@@ -46,13 +55,31 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
 
 
 @shared_task()
-def aggregate_user_match(region, summoner_id, match_id):
-    summoner_id = int(summoner_id)
-    match_id = int(match_id)
-    summoner = cass.get_summoner(id=summoner_id, region=region)
-    match = cass.get_match(id=match_id, region=region)
+def aggregate_batched_matches(batch, region, summoner_id):
+    matchlist = []
+    for m_id in batch:
+        match_id = int(m_id)
+        matchlist.append(cass.get_match(id=match_id, region=region))
 
-    try: # match.queue will call riot api
+    pool = Pool(20)
+    pool.map(load_match, matchlist)
+    pool.close()
+    pool.join()
+
+    for match in matchlist:
+        aggregate_user_match(match, summoner_id, region)
+
+def load_match(match):
+    match.load()
+
+def aggregate_user_match(match, summoner_id, region):
+    #summoner_id = int(match['summoner_id'])
+    #match_id = int(match['match_id'])
+    #region = match['region']
+
+    #match = cass.get_match(id=match_id, region=region)
+
+    try:
         is_ranked = match.queue == cass.Queue.ranked_solo_fives or match.queue == cass.Queue.ranked_flex_fives or match.queue == cass.Queue.ranked_flex_threes
     except:
         log.warn("Error checking is_ranked in aggregate_user_match")
@@ -68,7 +95,7 @@ def aggregate_user_match(region, summoner_id, match_id):
         profile.time_played += match.duration.total_seconds()
 
         for participant in match.participants:
-            if participant.summoner.id == summoner.id:
+            if participant.summoner.id == summoner_id:
                 user = participant
                 break
 
@@ -79,7 +106,7 @@ def aggregate_user_match(region, summoner_id, match_id):
             wards_placed = 0
             wards_killed = 0
 
-        season_id = data.SEASON_IDS[match.season]
+        season_id = cass.data.SEASON_IDS[match.season]
 
         items = [item.id if item else 0 for item in user.stats.items]
 
@@ -87,12 +114,12 @@ def aggregate_user_match(region, summoner_id, match_id):
         #blue_team = [p.to_json() for p in match.blue_team.participants]
 
         m, created = Matches.objects.select_for_update().get_or_create(
-            user_id=summoner.id,
+            user_id=summoner_id,
             match_id=match.id,
             region=match.region.value
         )
         m.season_id = season_id
-        m.queue_id = data.QUEUE_IDS[match.queue]
+        m.queue_id = cass.data.QUEUE_IDS[match.queue]
         m.timestamp = match.creation.timestamp
         m.duration = match.duration.total_seconds()
         m.champ_id = user.champion.id
@@ -140,7 +167,7 @@ def aggregate_user_match(region, summoner_id, match_id):
             m.killing_spree = 1
         m.save()
 
-        lawn, created = MatchLawn.objects.select_for_update().get_or_create(user_id=summoner.id, region=region, date=datetime.datetime.fromtimestamp(match.creation.timestamp))
+        lawn, created = MatchLawn.objects.select_for_update().get_or_create(user_id=summoner_id, region=region, date=datetime.datetime.fromtimestamp(match.creation.timestamp))
         if user.stats.win:
             lawn.wins += 1
         else:
@@ -148,7 +175,7 @@ def aggregate_user_match(region, summoner_id, match_id):
         lawn.save()
 
         try:
-            ucs, created = UserChampionStats.objects.select_for_update().get_or_create(user_id=summoner.id, region=region, season_id=season_id, champ_id=user.champion.id, lane=user.lane.value)
+            ucs, created = UserChampionStats.objects.select_for_update().get_or_create(user_id=summoner_id, region=region, season_id=season_id, champ_id=user.champion.id, lane=user.lane.value)
             if user.stats.win:
                 ucs.wins += 1
                 if match.duration.seconds <= 20 * 60:
@@ -230,7 +257,7 @@ def aggregate_user_match(region, summoner_id, match_id):
             enemy_team = match.blue_team.participants
 
         for enemy in enemy_team:
-            championv, created = UserChampionVersusStats.objects.select_for_update().get_or_create(user_id=summoner.id, region=region, season_id=season_id, champ_id=user.champion.id, enemy_champ_id=enemy.champion.id)
+            championv, created = UserChampionVersusStats.objects.select_for_update().get_or_create(user_id=summoner_id, region=region, season_id=season_id, champ_id=user.champion.id, enemy_champ_id=enemy.champion.id)
             championv.total_games += 1
             if user.stats.win:
                 championv.wins += 1
@@ -242,18 +269,21 @@ def aggregate_user_match(region, summoner_id, match_id):
             sorted_runes = [r.id for r in user.runes]
             sorted_runes.sort()
             rune_string = json.dumps(sorted_runes)
-            ucr, created = UserChampionRunes.objects.select_for_update().get_or_create(user_id=summoner.id, region=region, season_id=season_id, lane=user.lane.value, champ_id=user.champion.id, rune_set=rune_string)
+            ucr, created = UserChampionRunes.objects.select_for_update().get_or_create(user_id=summoner_id, region=region, season_id=season_id, lane=user.lane.value, champ_id=user.champion.id, rune_set=rune_string)
             ucr.occurence += 1
             ucr.save()
         except:
-            log.warn("legacy runes")
+            log.warn("null lane")
 
-        sorted_summs = [user.summoner_spell_d.id, user.summoner_spell_f.id]
-        sorted_summs.sort()
-        summoner_string = json.dumps(sorted_summs)
-        ucs, created = UserChampionSummoners.objects.select_for_update().get_or_create(user_id=summoner.id, region=region, season_id=season_id, lane=user.lane.value, champ_id=user.champion.id, summoner_set=summoner_string)
-        ucs.occurence += 1
-        ucs.save()
+        try:
+            sorted_summs = [user.summoner_spell_d.id, user.summoner_spell_f.id]
+            sorted_summs.sort()
+            summoner_string = json.dumps(sorted_summs)
+            ucs, created = UserChampionSummoners.objects.select_for_update().get_or_create(user_id=summoner_id, region=region, season_id=season_id, lane=user.lane.value, champ_id=user.champion.id, summoner_set=summoner_string)
+            ucs.occurence += 1
+            ucs.save()
+        except:
+            log.warn("null lane")
 
         try:
             if profile.last_match_updated < match.id:
@@ -267,12 +297,16 @@ def aggregate_user_match(region, summoner_id, match_id):
             profile.losses += 1
         profile.save()
 
-    for item in user.stats.items:
-        if item:
-            with transaction.atomic():
-                uci, created = UserChampionItems.objects.select_for_update().get_or_create(user_id=summoner.id, region=region, season_id=season_id, lane=user.lane.value, champ_id=user.champion.id, item_id=item.id)
-                uci.occurence += 1
-                uci.save()
+    try:
+        for item in user.stats.items:
+            if item:
+                with transaction.atomic():
+                    uci, created = UserChampionItems.objects.select_for_update().get_or_create(user_id=summoner_id, region=region, season_id=season_id, lane=user.lane.value, champ_id=user.champion.id, item_id=item.id)
+                    uci.occurence += 1
+                    uci.save()
+    except:
+        log.warn("null lane")
+        pass
 
     if is_ranked:
         aggregate_global_stats(match=match)
