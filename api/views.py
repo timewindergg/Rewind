@@ -205,7 +205,7 @@ def update_summoner_helper(s, region):
                 user_champion.chest_granted = cmastery.chest_granted
                 user_champion.save()
 
-        transaction.on_commit(lambda: aggregate_users.delay(summoner.user_id, region))
+        transaction.on_commit(lambda: aggregate_users.delay(summoner.user_id, region, 300))
 
 
 @csrf_exempt

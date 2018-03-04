@@ -7,6 +7,7 @@ import json
 import datetime
 from multiprocessing.dummy import Pool
 from itertools import repeat
+import time
 
 from api.models import ProfileStats, Matches, MatchLawn, UserChampionStats, ChampionStats, ChampionItems, ChampionRunes, UserChampionVersusStats, UserChampionItems, UserChampionRunes, UserChampionSummoners
 
@@ -57,6 +58,8 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
 
 @shared_task()
 def aggregate_batched_matches(batch, region, summoner_id):
+    old = time.time() * 1000
+
     matchlist = []
     for m_id in batch:
         match_id = int(m_id)
@@ -67,13 +70,22 @@ def aggregate_batched_matches(batch, region, summoner_id):
     pool.close()
     pool.join()
 
+    #print("fetch:", time.time()*1000 - old)
+
+    #for match in matchlist:
+    #    aggregate_user_match(match, summoner_id, region)
+
     pool = Pool(len(matchlist))
-    poo.starmap(aggregate_user_match, zip(match, repeat(summoner_id), repeat(region)))
+    pool.starmap(aggregate_user_match, zip(matchlist, repeat(summoner_id), repeat(region)))
+    pool.close()
+    pool.join()
 
 def load_match(match):
     match.load()
 
 def aggregate_user_match(match, summoner_id, region):
+    old = time.time() * 1000
+
     #summoner_id = int(match['summoner_id'])
     #match_id = int(match['match_id'])
     #region = match['region']
@@ -154,8 +166,8 @@ def aggregate_user_match(match, summoner_id, region):
         m.is_remake = match.is_remake
         #m.red_team = json.dumps(red_team)
         #m.blue_team = json.dumps(blue_team)
-        m.red_team = match.red_team.to_json()
-        m.blue_team = match.blue_team.to_json()
+        #m.red_team = match.red_team.to_json()
+        #m.blue_team = match.blue_team.to_json()
         if user.stats.penta_kills > 0:
             m.killing_spree = 5
         elif user.stats.quadra_kills > 0:
@@ -318,6 +330,8 @@ def aggregate_user_match(match, summoner_id, region):
         aggregate_global_stats(match=match)
     else:
         return
+
+    print("aggr",time.time() * 1000 - old)
 
 
 def aggregate_global_stats(match):
