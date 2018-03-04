@@ -38,7 +38,7 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
             #aggregate_user_match.delay(region=region, summoner_id=summoner_id, match_id=match.id)
             batch.append(match.id)
 
-            if len(batch) == 20:
+            if len(batch) == 25:
                 aggregate_batched_matches.delay(batch, region, summoner_id)
                 batch = []
             count += 1
