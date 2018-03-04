@@ -60,7 +60,6 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
 def test():
     for i in range(0, 5):
         cass.get_match(2726687109, region='NA').load()
-        cass.get_match(2726091726, region='NA').load()
 
 
 @shared_task()

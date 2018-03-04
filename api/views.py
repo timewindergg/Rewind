@@ -103,7 +103,6 @@ def tt(request):
 
     for i in range(0, 5):
         print("oh hey mark")
-        cass.get_match(2726687109, region='NA').load()
         cass.get_match(2726091726, region='NA').load()
 
     return HttpResponse(status=200)
