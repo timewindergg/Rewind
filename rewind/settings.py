@@ -135,3 +135,8 @@ STATICFILES_DIRS = [
     os.path.join(PROJECT_ROOT, "static/masteries"),
     os.path.join(PROJECT_ROOT, "static/tiers")
 ]
+
+# Aggregation settings
+AGGREGATION_BATCH_SIZE = os.environ['AGGREGATION_BATCH_SIZE']
+AGGREGATION_SIZE = os.environ['AGGREGATION_SIZE']
+
