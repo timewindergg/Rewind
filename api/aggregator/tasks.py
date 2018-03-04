@@ -61,7 +61,7 @@ def aggregate_batched_matches(batch, region, summoner_id):
         match_id = int(m_id)
         matchlist.append(cass.get_match(id=match_id, region=region))
 
-    pool = Pool(20)
+    pool = Pool(len(matchlist))
     pool.map(load_match, matchlist)
     pool.close()
     pool.join()
