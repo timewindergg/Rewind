@@ -125,8 +125,6 @@ def aggregate_user_match(match, summoner_id, region):
             profile.losses += 1
         profile.save()
 
-
-    with transaction.atomic():
         try:
             wards_placed = user.stats.wards_placed
             wards_killed = user.stats.wards_killed
@@ -141,6 +139,7 @@ def aggregate_user_match(match, summoner_id, region):
         #red_team = [p.to_json() for p in match.red_team.participants]
         #blue_team = [p.to_json() for p in match.blue_team.participants]
 
+    with transaction.atomic():
         m, created = Matches.objects.select_for_update().get_or_create(
             user_id=summoner_id,
             match_id=match.id,
@@ -195,6 +194,7 @@ def aggregate_user_match(match, summoner_id, region):
             m.killing_spree = 1
         m.save()
 
+    with transaction.atomic():
         lawn, created = MatchLawn.objects.select_for_update().get_or_create(user_id=summoner_id, region=region, date=datetime.datetime.fromtimestamp(match.creation.timestamp))
         if user.stats.win:
             lawn.wins += 1
@@ -202,6 +202,7 @@ def aggregate_user_match(match, summoner_id, region):
             lawn.losses += 1
         lawn.save()
 
+    with transaction.atomic():
         try:
             ucs, created = UserChampionStats.objects.select_for_update().get_or_create(user_id=summoner_id, region=region, season_id=season_id, champ_id=user.champion.id, lane=user.lane.value)
             if user.stats.win:
@@ -279,11 +280,12 @@ def aggregate_user_match(match, summoner_id, region):
         except:
             pass
 
-        if user.side.value == 100:
-            enemy_team = match.red_team.participants
-        elif user.side.value == 200:
-            enemy_team = match.blue_team.participants
+    if user.side.value == 100:
+        enemy_team = match.red_team.participants
+    elif user.side.value == 200:
+        enemy_team = match.blue_team.participants
 
+    with transaction.atomic():
         for enemy in enemy_team:
             championv, created = UserChampionVersusStats.objects.select_for_update().get_or_create(user_id=summoner_id, region=region, season_id=season_id, champ_id=user.champion.id, enemy_champ_id=enemy.champion.id)
             championv.total_games += 1
@@ -293,6 +295,7 @@ def aggregate_user_match(match, summoner_id, region):
                 championv.losses += 1
             championv.save()
 
+    with transaction.atomic():
         try:
             sorted_runes = [r.id for r in user.runes]
             sorted_runes.sort()
@@ -303,6 +306,7 @@ def aggregate_user_match(match, summoner_id, region):
         except:
             log.warn("null lane")
 
+    with transaction.atomic():
         try:
             sorted_summs = [user.summoner_spell_d.id, user.summoner_spell_f.id]
             sorted_summs.sort()
