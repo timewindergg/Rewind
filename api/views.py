@@ -101,6 +101,8 @@ def get_champion_id(name):
 def tt(request):
     test.delay()
 
+    return HttpResponse(status=200)
+
 
 #
 # STATIC DATA
