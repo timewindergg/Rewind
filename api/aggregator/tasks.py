@@ -6,6 +6,7 @@ import cassiopeia as cass
 import json
 import datetime
 from multiprocessing.dummy import Pool
+from itertools import repeat
 
 from api.models import ProfileStats, Matches, MatchLawn, UserChampionStats, ChampionStats, ChampionItems, ChampionRunes, UserChampionVersusStats, UserChampionItems, UserChampionRunes, UserChampionSummoners
 
@@ -66,8 +67,8 @@ def aggregate_batched_matches(batch, region, summoner_id):
     pool.close()
     pool.join()
 
-    for match in matchlist:
-        aggregate_user_match(match, summoner_id, region)
+    pool = Pool(len(matchlist))
+    poo.starmap(aggregate_user_match, zip(match, repeat(summoner_id), repeat(region)))
 
 def load_match(match):
     match.load()
@@ -306,7 +307,7 @@ def aggregate_user_match(match, summoner_id, region):
 
         with transaction.atomic():
             for item in items.keys():
-                uci, created = UserChampionItems.objects.select_for_update().get_or_create(user_id=summoner_id, region=region, season_id=season_id, lane=user.lane.value, champ_id=user.champion.id, item_id=item.id)
+                uci, created = UserChampionItems.objects.select_for_update().get_or_create(user_id=summoner_id, region=region, season_id=season_id, lane=user.lane.value, champ_id=user.champion.id, item_id=item)
                 uci.occurence += 1
                 uci.save()
     except:
