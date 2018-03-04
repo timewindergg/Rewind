@@ -73,13 +73,13 @@ def aggregate_batched_matches(batch, region, summoner_id):
 
     #print("fetch:", time.time()*1000 - old)
 
-    #for match in matchlist:
-    #    aggregate_user_match(match, summoner_id, region)
+    for match in matchlist:
+        aggregate_user_match(match, summoner_id, region)
 
-    pool = Pool(len(matchlist))
-    pool.starmap(aggregate_user_match, zip(matchlist, repeat(summoner_id), repeat(region)))
-    pool.close()
-    pool.join()
+    #pool = Pool(len(matchlist))
+    #pool.starmap(aggregate_user_match, zip(matchlist, repeat(summoner_id), repeat(region)))
+    #pool.close()
+    #pool.join()
 
 def load_match(match):
     match.load()
@@ -125,19 +125,19 @@ def aggregate_user_match(match, summoner_id, region):
             profile.losses += 1
         profile.save()
 
-        try:
-            wards_placed = user.stats.wards_placed
-            wards_killed = user.stats.wards_killed
-        except:
-            wards_placed = 0
-            wards_killed = 0
+    try:
+        wards_placed = user.stats.wards_placed
+        wards_killed = user.stats.wards_killed
+    except:
+        wards_placed = 0
+        wards_killed = 0
 
-        season_id = cass.data.SEASON_IDS[match.season]
+    season_id = cass.data.SEASON_IDS[match.season]
 
-        items = [item.id if item else 0 for item in user.stats.items]
+    items = [item.id if item else 0 for item in user.stats.items]
 
-        #red_team = [p.to_json() for p in match.red_team.participants]
-        #blue_team = [p.to_json() for p in match.blue_team.participants]
+    #red_team = [p.to_json() for p in match.red_team.participants]
+    #blue_team = [p.to_json() for p in match.blue_team.participants]
 
     with transaction.atomic():
         m, created = Matches.objects.select_for_update().get_or_create(
