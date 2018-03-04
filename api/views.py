@@ -296,7 +296,7 @@ def get_match_history(request):
     if len(matches) > 0:
         response = list(matches.values())
     else:
-        recent_matches = cass.get_match_history(summoner=s, region=region, begin_index=0, end_index=20, seasons=[cass.data.Season.from_id(11)])
+        recent_matches = cass.get_match_history(summoner=summoner, region=region, begin_index=0, end_index=20, seasons=[cass.data.Season.from_id(11)])
         response = []
 
 

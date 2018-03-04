@@ -298,12 +298,17 @@ def aggregate_user_match(match, summoner_id, region):
         profile.save()
 
     try:
+        items = {}
         for item in user.stats.items:
             if item:
-                with transaction.atomic():
-                    uci, created = UserChampionItems.objects.select_for_update().get_or_create(user_id=summoner_id, region=region, season_id=season_id, lane=user.lane.value, champ_id=user.champion.id, item_id=item.id)
-                    uci.occurence += 1
-                    uci.save()
+                if not item.id in items:
+                    items[item.id] = 1
+
+        with transaction.atomic():
+            for item in items.keys():
+                uci, created = UserChampionItems.objects.select_for_update().get_or_create(user_id=summoner_id, region=region, season_id=season_id, lane=user.lane.value, champ_id=user.champion.id, item_id=item.id)
+                uci.occurence += 1
+                uci.save()
     except:
         log.warn("null lane")
         pass
