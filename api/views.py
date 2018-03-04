@@ -6,6 +6,7 @@ from django.views.decorators.cache import cache_page
 from django.forms.models import model_to_dict
 from django.db import transaction
 from django.db.models import Sum, Q
+from django.conf import settings
 
 import cassiopeia as cass
 from cassiopeia import Champion
@@ -205,7 +206,7 @@ def update_summoner_helper(s, region):
                 user_champion.chest_granted = cmastery.chest_granted
                 user_champion.save()
 
-        transaction.on_commit(lambda: aggregate_users.delay(summoner.user_id, region, AGGREGATION_SIZE))
+        transaction.on_commit(lambda: aggregate_users.delay(summoner.user_id, region, settings.AGGREGATION_SIZE))
 
 
 @csrf_exempt
