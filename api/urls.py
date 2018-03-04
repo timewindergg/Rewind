@@ -6,6 +6,7 @@ from api import views
 urlpatterns = [
     path('get_match_timeline/', views.get_match_timeline),
     path('get_summoner/', views.get_summoner),
+    path('get_summoner_by_id/', views.get_summoner),
     path('get_match_history/', views.get_match_history),
     path('get_user_champion_stats_by_id/', views.get_user_champion_stats_by_id),
     path('get_user_champion_stats_by_name/', views.get_user_champion_stats_by_name),
