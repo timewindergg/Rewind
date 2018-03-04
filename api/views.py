@@ -18,7 +18,7 @@ import json
 from functools import reduce
 from multiprocessing.dummy import Pool
 
-from .aggregator.tasks import aggregate_users, aggregate_user_match, aggregate_global_stats, test
+from .aggregator.tasks import aggregate_users, aggregate_user_match, aggregate_global_stats
 from .models import ProfileStats, ChampionItems, ChampionStats, UserChampionStats, Matches, MatchLawn, UserLeagues, UserChampionMasteries, UserChampionVersusStats, UserChampionItems, UserChampionRunes, UserChampionSummoners
 from . import items as Items
 from . import consts as Consts
@@ -95,18 +95,6 @@ def normalize_region(region):
 
 def get_champion_id(name):
     return int(Consts.CHAMPION_IDS[name.lower()])
-
-
-@require_http_methods(["GET"])
-def tt(request):
-    test.delay()
-
-    for i in range(0, 5):
-        print("oh hey mark")
-        cass.get_match(2726091726, region='NA').load()
-
-    return HttpResponse(status=200)
-
 
 #
 # STATIC DATA
