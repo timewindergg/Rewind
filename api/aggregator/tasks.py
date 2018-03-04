@@ -11,6 +11,7 @@ from multiprocessing.dummy import Pool
 from itertools import repeat
 import time
 import os
+import gc
 
 from api.models import ProfileStats, Matches, MatchLawn, UserChampionStats, ChampionStats, ChampionItems, ChampionRunes, UserChampionVersusStats, UserChampionItems, UserChampionRunes, UserChampionSummoners
 
@@ -82,6 +83,8 @@ def aggregate_batched_matches(batch, region, summoner_id):
     #pool.starmap(aggregate_user_match, zip(matchlist, repeat(summoner_id), repeat(region)))
     #pool.close()
     #pool.join()
+
+    gc.collect()
 
 def load_match(match):
     match.load()
@@ -336,7 +339,8 @@ def aggregate_user_match(match, summoner_id, region):
         pass
 
     if is_ranked:
-        aggregate_global_stats(match=match)
+        #aggregate_global_stats(match=match)
+        pass
     else:
         return
 
@@ -356,11 +360,10 @@ def aggregate_global_stats(match):
         champ_stats, created = ChampionStats.objects.get_or_create(champ_id=champ_id)
         champ_stats.total_games = F('total_games') + 1
         champ_stats.save()
-
-        for item in items.keys():
-            champ_item, created = ChampionItems.objects.get_or_create(champ_id=champ_id, item_id=item)
-            champ_item.occurence = F('occurence') + 1
-            champ_item.save()
+    
+        champ_item, created = ChampionItems.objects.filter(champ_id=champ_id, item_id__in=items.keys())
+        champ_item.occurence = F('occurence') + 1
+        champ_item.save()
 
         for rune in participant.runes:
             champ_rune, created = ChampionRunes.objects.get_or_create(champ_id=champ_id, rune_id=rune.id)
