@@ -8,6 +8,7 @@ import datetime
 from multiprocessing.dummy import Pool
 from itertools import repeat
 import time
+import os
 
 from api.models import ProfileStats, Matches, MatchLawn, UserChampionStats, ChampionStats, ChampionItems, ChampionRunes, UserChampionVersusStats, UserChampionItems, UserChampionRunes, UserChampionSummoners
 
@@ -40,7 +41,7 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
             #aggregate_user_match.delay(region=region, summoner_id=summoner_id, match_id=match.id)
             batch.append(match.id)
 
-            if len(batch) == 25:
+            if len(batch) == os.environ['AGGREGATION_BATCH_SIZE']:
                 aggregate_batched_matches.delay(batch, region, summoner_id)
                 batch = []
             count += 1
@@ -98,6 +99,11 @@ def aggregate_user_match(match, summoner_id, region):
         log.warn("Error checking is_ranked in aggregate_user_match")
         is_ranked = False
 
+    for participant in match.participants:
+        if participant.summoner.id == summoner_id:
+            user = participant
+            break
+
     with transaction.atomic():
         try:
             profile = ProfileStats.objects.select_for_update().get(user_id=summoner_id, region=region)
@@ -107,11 +113,20 @@ def aggregate_user_match(match, summoner_id, region):
 
         profile.time_played += match.duration.total_seconds()
 
-        for participant in match.participants:
-            if participant.summoner.id == summoner_id:
-                user = participant
-                break
+        try:
+            if profile.last_match_updated < match.id:
+                profile.last_match_updated = match.id
+        except: # Player does not have any matches
+            pass
 
+        if user.stats.win:
+            profile.wins += 1
+        else:
+            profile.losses += 1
+        profile.save()
+
+
+    with transaction.atomic():
         try:
             wards_placed = user.stats.wards_placed
             wards_killed = user.stats.wards_killed
@@ -297,18 +312,6 @@ def aggregate_user_match(match, summoner_id, region):
             ucs.save()
         except:
             log.warn("null lane")
-
-        try:
-            if profile.last_match_updated < match.id:
-                profile.last_match_updated = match.id
-        except: # Player does not have any matches
-            pass
-
-        if user.stats.win:
-            profile.wins += 1
-        else:
-            profile.losses += 1
-        profile.save()
 
     try:
         items = {}
