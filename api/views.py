@@ -20,7 +20,7 @@ from functools import reduce
 from multiprocessing.dummy import Pool
 
 from .aggregator.tasks import aggregate_users, aggregate_user_match, aggregate_global_stats
-from .models import ProfileStats, ChampionItems, ChampionStats, UserChampionStats, Matches, MatchLawn, UserLeagues, UserChampionMasteries, UserChampionVersusStats, UserChampionItems, UserChampionRunes, UserChampionSummoners
+from .models import ProfileStats, ChampionItems, ChampionStats, ChampionMatchups, UserChampionStats, Matches, MatchLawn, UserLeagues, UserChampionMasteries, UserChampionVersusStats, UserChampionItems, UserChampionRunes, UserChampionSummoners
 from . import items as Items
 from . import consts as Consts
 
@@ -435,10 +435,30 @@ def get_current_match(request):
 
     response = {}
     winrates = {}
+    skill_orders_response = {}
 
     blue_team_champs = [p.champion.id for p in m.teams[0].participants]
     red_team_champs = [p.champion.id for p in m.teams[1].participants]
 
+    # champion winrates
+    wr_matrix = {}
+    for btc in blue_team_champs:
+        champ_wrs = {}
+        for mtc in red_team_champs:
+            cid = min(btc, mtc)
+            eid = max(btc, mtc)
+            matchup = ChampionMatchups.objects.filter(champ_id=cid, enemy_champ_id=eid)
+            if len(matchup) > 0:
+                wrs = [mu.win_rate for mu in matchup]
+                awr = sum(wrs) / len(wrs)
+
+                if btc < mtc:
+                    champ_wrs[eid] = awr
+                else:
+                    champ_wrs[cid] = awr
+                
+        wr_matrix[btc] = champ_wrs
+                
     red_team = []
     blue_team = []
     for participant in m.participants:
@@ -454,15 +474,20 @@ def get_current_match(request):
         p['runes'] = runes
         if participant.side.value == 100:
             blue_team.append(p)
-            cvs = UserChampionVersusStats.objects.filter(Q(champ_id=participant.champion.id) & reduce(lambda x, y: x | y, [Q(enemy_champ_id=champ) for champ in red_team_champs])).values('enemy_champ_id').annotate(Sum('wins'), Sum('losses'), Sum('total_games'))
         elif participant.side.value == 200:
             red_team.append(p)
-            cvs = UserChampionVersusStats.objects.filter(Q(champ_id=participant.champion.id) & reduce(lambda x, y: x | y, [Q(enemy_champ_id=champ) for champ in blue_team_champs])).values('enemy_champ_id').annotate(Sum('wins'), Sum('losses'), Sum('total_games'))
 
-        winrate = {}
-        for c in cvs:
-            winrate[c['enemy_champ_id']] = c
-        winrates[str(participant.champion.id)] = winrate
+        # champion skill order
+        champ_stats = ChampionStats.objects.filter(champ_id=participant.champion.id).values('skill_orders')
+        best_order = []
+        top_wr_so = 0
+        for stat in champ_stats:
+            so = json.loads(stat['skill_orders'])
+            if so['winrate'] > top_wr_so:
+                top_wr_so = so['winrate']
+                order = so['hash'].split('-')[1:]
+                best_order = order
+        skill_orders_response[participant.champion.id] = best_order
 
     blue_bans = [v.id for k, v in m.teams[0].bans.items()]
     red_bans = [v.id for k, v in m.teams[1].bans.items()]
@@ -477,7 +502,8 @@ def get_current_match(request):
     response['blue_bans'] = blue_bans
     response['creation'] = m.creation.timestamp
     response['queue'] = queue
-    response['winrates'] = winrates
+    response['winrates'] = wr_matrix
+    response['skill_orders'] = skill_orders_response
 
     return JsonResponse(response)
 
