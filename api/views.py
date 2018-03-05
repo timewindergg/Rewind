@@ -76,7 +76,7 @@ cass.apply_settings({
   },
 
   "logging": {
-    "print_calls": True,
+    "print_calls": False,
     "print_riot_api_key": False,
     "default": "WARNING",
     "core": "WARNING"
