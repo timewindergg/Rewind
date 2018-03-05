@@ -221,7 +221,15 @@ def aggregate_user_match(match, summoner_id, region):
             m.killing_spree = 1
         m.save()
 
-    lawn, created = MatchLawn.objects.get_or_create(user_id=summoner_id, region=region, date=datetime.datetime.fromtimestamp(match.creation.timestamp))
+    lawn, created = MatchLawn.objects.get_or_create(
+        user_id=summoner_id,
+        region=region, 
+        date=datetime.datetime.fromtimestamp(match.creation.timestamp), 
+        defaults={
+            'wins': 0,
+            'losses': 0
+        }
+    )
     if user.stats.win:
         lawn.wins = F('wins') + 1
     else:
@@ -298,7 +306,18 @@ def aggregate_user_match(match, summoner_id, region):
         enemy_team = match.blue_team.participants
 
     for enemy in enemy_team:
-        championv, created = UserChampionVersusStats.objects.get_or_create(user_id=summoner_id, region=region, season_id=season_id, champ_id=user.champion.id, enemy_champ_id=enemy.champion.id)
+        championv, created = UserChampionVersusStats.objects.get_or_create(
+            user_id=summoner_id, 
+            region=region, 
+            season_id=season_id, 
+            champ_id=user.champion.id, 
+            enemy_champ_id=enemy.champion.id,
+            defaults={
+                'wins': 0,
+                'losses': 0,
+                'total_games': 0
+            }
+        )
         championv.total_games = F('total_games') + 1
         if user.stats.win:
             championv.wins = F('wins') + 1
@@ -309,14 +328,30 @@ def aggregate_user_match(match, summoner_id, region):
     sorted_runes = [r.id for r in user.runes]
     sorted_runes.sort()
     rune_string = json.dumps(sorted_runes)
-    ucr, created = UserChampionRunes.objects.get_or_create(user_id=summoner_id, region=region, season_id=season_id, lane=lane, champ_id=user.champion.id, rune_set=rune_string)
+    ucr, created = UserChampionRunes.objects.get_or_create(
+        user_id=summoner_id, 
+        region=region, 
+        season_id=season_id, 
+        lane=lane, 
+        champ_id=user.champion.id, 
+        rune_set=rune_string,
+        defaults={'occurence': 0}
+    )
     ucr.occurence = F('occurence') + 1
     ucr.save()
 
     sorted_summs = [user.summoner_spell_d.id, user.summoner_spell_f.id]
     sorted_summs.sort()
     summoner_string = json.dumps(sorted_summs)
-    ucs, created = UserChampionSummoners.objects.get_or_create(user_id=summoner_id, region=region, season_id=season_id, lane=lane, champ_id=user.champion.id, summoner_set=summoner_string)
+    ucs, created = UserChampionSummoners.objects.get_or_create(
+        user_id=summoner_id, 
+        region=region, 
+        season_id=season_id, 
+        lane=lane, 
+        champ_id=user.champion.id, 
+        summoner_set=summoner_string
+        defaults={'occurence': 0}
+    )
     ucs.occurence = F('occurence') + 1
     ucs.save()
 
@@ -327,7 +362,15 @@ def aggregate_user_match(match, summoner_id, region):
                 items[item.id] = 1
 
     for item in items.keys():
-        uci, created = UserChampionItems.objects.get_or_create(user_id=summoner_id, region=region, season_id=season_id, lane=lane, champ_id=user.champion.id, item_id=item)
+        uci, created = UserChampionItems.objects.get_or_create(
+            user_id=summoner_id, 
+            region=region, 
+            season_id=season_id, 
+            lane=lane, 
+            champ_id=user.champion.id, 
+            item_id=item,
+            defaults={'occurence': 0}
+        )
         uci.occurence = F('occurence') + 1
         uci.save()
 
