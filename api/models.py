@@ -6,9 +6,29 @@ class Items(models.Model):
 
 
 class ChampionStats(models.Model):
-    champ_id = models.IntegerField(primary_key=True)
+    champ_id = models.IntegerField()
     total_games = models.IntegerField(default=0)
+    role = models.CharField(max_length=50)
+    skill_orders = models.TextField()
+    items = models.TextField()
+    summoners = models.TextField()
+    runes = models.TextField()
 
+    class Meta:
+        unique_together = (("champ_id", "role"),)
+
+
+class ChampionMatchups(models.Model):
+    champ_id = models.IntegerField()
+    enemy_champ_id = models.IntegerField()
+    role = models.CharField(max_length=50)
+    win_rate = models.FloatField(default=0)
+    kills = models.FloatField(default=0)
+    losses = models.FloatField(default=0)
+    assists = models.FloatField(default=0)
+
+    class Meta:
+        unique_together = (("champ_id", "role", "enemy_champ_id"),)
 
 class ChampionItems(models.Model):
     champ_id = models.IntegerField()
@@ -180,7 +200,7 @@ class ProfileStats(models.Model):
 
 class Accolades(models.Model):
     accolade_id = models.IntegerField(primary_key=True)
-    description = models.CharField(max_length=300) 
+    description = models.CharField(max_length=300)
 
 
 class UserAccolades(models.Model):
