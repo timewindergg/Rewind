@@ -91,7 +91,7 @@ def aggregate_batched_matches(batch, region, summoner_id):
         #for match in matchlist:
         #    aggregate_user_match(match, summoner_id, region)
 
-        pool = Pool(len(matchlist))
+        pool = Pool(20)
         pool.starmap(aggregate_user_match, zip(matchlist, repeat(summoner_id), repeat(region)))
         pool.close()
         pool.join()
