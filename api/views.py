@@ -512,8 +512,8 @@ def load_match(match):
     try:
         match.load()
         match.timeline.load()
-    except:
-        pass
+    except Exception as e:
+        log.warn("Failed to load match", e, stack_info=True)
 
 #
 # CURRENT_MATCH_DETAILS
@@ -636,10 +636,6 @@ def get_current_match_details(summoner_name, region, champion_id):
     build['boots'] = boots
     build['core'] = core
     build['situational'] = situational
-
-    with transaction.atomic():
-        champ_stats, created = ChampionStats.objects.select_for_update().get_or_create(champ_id=champion_id)
-    build['totalGamesAggregated'] = champ_stats.total_games
 
     response['stats'] = stats
     response['build'] = build
