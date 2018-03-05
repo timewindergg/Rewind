@@ -88,13 +88,13 @@ def aggregate_batched_matches(batch, region, summoner_id):
 
         #print("fetch:", time.time()*1000 - old)
 
-        for match in matchlist:
-            aggregate_user_match(match, summoner_id, region)
+        #for match in matchlist:
+        #    aggregate_user_match(match, summoner_id, region)
 
-        #pool = Pool(len(matchlist))
-        #pool.starmap(aggregate_user_match, zip(matchlist, repeat(summoner_id), repeat(region)))
-        #pool.close()
-        #pool.join()
+        pool = Pool(4)
+        pool.starmap(aggregate_user_match, zip(matchlist, repeat(summoner_id), repeat(region)))
+        pool.close()
+        pool.join()
 
     except Exception as e:
         log.warn("Failed to aggregate batched matches", e, stack_info=True)
