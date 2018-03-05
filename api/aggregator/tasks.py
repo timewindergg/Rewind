@@ -19,7 +19,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-@shared_task(max_retries=5)
+@shared_task(retry_backoff=True, max_retries=5)
 def aggregate_users(summoner_id, region, max_aggregations=-1):
     try:
         # init
@@ -68,7 +68,7 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
         aggregate_users.retry(exc=e)
 
 
-@shared_task(max_retries=5)
+@shared_task(retry_backoff=True)
 def aggregate_batched_matches(batch, region, summoner_id):
     try:
         old = time.time() * 1000
@@ -91,12 +91,14 @@ def aggregate_batched_matches(batch, region, summoner_id):
         #for match in matchlist:
         #    aggregate_user_match(match, summoner_id, region)
 
-        pool = Pool(4)
+        pool = Pool(len(matchlist))
         pool.starmap(aggregate_user_match, zip(matchlist, repeat(summoner_id), repeat(region)))
         pool.close()
         pool.join()
 
     except Exception as e:
+        if pool is not None:
+            pool.close()
         log.warn("Failed to aggregate batched matches", e, stack_info=True)
         aggregate_batched_matches.retry(exc=e)
 
@@ -344,7 +346,7 @@ def aggregate_user_match(match, summoner_id, region):
     print("aggr",time.time() * 1000 - old)
 
 
-@shared_task(max_retries=3)
+@shared_task(retry_backoff=True, max_retries=3)
 def aggregate_global_stats(data):
     try:
         for participant in data:
