@@ -18,9 +18,13 @@ from api.models import ProfileStats, Matches, MatchLawn, UserChampionStats, Cham
 import logging
 log = logging.getLogger(__name__)
 
+
 @shared_task(max_retries=5)
 def aggregate_users(summoner_id, region, max_aggregations=-1):
     try:
+        # init
+        cass.get_realms(region=region).load()
+
         summoner_id = int(summoner_id)
         max_aggregations = int(max_aggregations)
         profile = ProfileStats.objects.get(user_id=summoner_id, region=region)
@@ -69,6 +73,9 @@ def aggregate_batched_matches(batch, region, summoner_id):
     try:
         old = time.time() * 1000
 
+        # init
+        cass.get_realms(region=region).load()
+
         matchlist = []
         for m_id in batch:
             match_id = int(m_id)
@@ -89,9 +96,8 @@ def aggregate_batched_matches(batch, region, summoner_id):
         #pool.close()
         #pool.join()
 
-        gc.collect()
     except Exception as e:
-        log.warn("Failed to aggregate batched matches", stack_info=True)
+        log.warn("Failed to aggregate batched matches", e, stack_info=True)
         aggregate_batched_matches.retry(exc=e)
 
 
@@ -136,7 +142,7 @@ def aggregate_user_match(match, summoner_id, region):
             profile = ProfileStats.objects.select_for_update().get(user_id=summoner_id, region=region)
         except Exception as e:
             log.error("Summoner not created in database")
-            return
+            raise e
 
         profile.time_played += match.duration.total_seconds()
 
@@ -162,9 +168,6 @@ def aggregate_user_match(match, summoner_id, region):
     season_id = cass.data.SEASON_IDS[match.season]
 
     items = [item.id if item else 0 for item in user.stats.items]
-
-    #red_team = [p.to_json() for p in match.red_team.participants]
-    #blue_team = [p.to_json() for p in match.blue_team.participants]
 
     with transaction.atomic():
         m, created = Matches.objects.select_for_update().get_or_create(
@@ -202,10 +205,8 @@ def aggregate_user_match(match, summoner_id, region):
         m.winner = 100 if match.blue_team.win else 200
         m.won = user.stats.win
         m.is_remake = match.is_remake
-        #m.red_team = json.dumps(red_team)
-        #m.blue_team = json.dumps(blue_team)
-        #m.red_team = match.red_team.to_json()
-        #m.blue_team = match.blue_team.to_json()
+        m.red_team = match.red_team.to_json()
+        m.blue_team = match.blue_team.to_json()
         if user.stats.penta_kills > 0:
             m.killing_spree = 5
         elif user.stats.quadra_kills > 0:
@@ -322,11 +323,11 @@ def aggregate_user_match(match, summoner_id, region):
         if item:
             if not item.id in items:
                 items[item.id] = 1
-    with transaction.atomic():
-        for item in items.keys():
-            uci, created = UserChampionItems.objects.get_or_create(user_id=summoner_id, region=region, season_id=season_id, lane=lane, champ_id=user.champion.id, item_id=item)
-            uci.occurence = F('occurence') + 1
-            uci.save()
+
+    for item in items.keys():
+        uci, created = UserChampionItems.objects.get_or_create(user_id=summoner_id, region=region, season_id=season_id, lane=lane, champ_id=user.champion.id, item_id=item)
+        uci.occurence = F('occurence') + 1
+        uci.save()
 
     if is_ranked:
         data = []
