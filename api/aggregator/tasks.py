@@ -71,8 +71,6 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
 @shared_task(retry_backoff=True)
 def aggregate_batched_matches(batch, region, summoner_id):
     try:
-        old = time.time() * 1000
-
         # init
         cass.get_realms(region=region).load()
 
@@ -107,8 +105,6 @@ def load_match(match):
     match.load()
 
 def aggregate_user_match(match, summoner_id, region):
-    old = time.time() * 1000
-
     #summoner_id = int(match['summoner_id'])
     #match_id = int(match['match_id'])
     #region = match['region']
@@ -385,8 +381,6 @@ def aggregate_user_match(match, summoner_id, region):
         aggregate_global_stats.delay(data)
     else:
         return
-
-    print("aggr",time.time() * 1000 - old)
 
 
 @shared_task(retry_backoff=True, max_retries=3)
