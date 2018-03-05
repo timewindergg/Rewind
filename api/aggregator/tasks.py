@@ -349,7 +349,7 @@ def aggregate_user_match(match, summoner_id, region):
         season_id=season_id, 
         lane=lane, 
         champ_id=user.champion.id, 
-        summoner_set=summoner_string
+        summoner_set=summoner_string,
         defaults={'occurence': 0}
     )
     ucs.occurence = F('occurence') + 1
