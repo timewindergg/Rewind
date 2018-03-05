@@ -103,7 +103,7 @@ WSGI_APPLICATION = 'rewind.wsgi.application'
 DATABASES = {}
 
 import dj_database_url
-DATABASES['default'] =  dj_database_url.config(default='postgres://localhost:5432/timewinder')
+DATABASES['default'] =  dj_database_url.config(conn_max_age=60, default='postgres://localhost:5432/timewinder')
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/

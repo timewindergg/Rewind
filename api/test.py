@@ -61,6 +61,9 @@ cass.apply_settings({
   }
 })
 
+import asyncio
+
+pool = Pool(25)
 def aggregate_batched_matches(batch, region, summoner_id):
   # init
   cass.get_realms(region=region).load()
@@ -70,15 +73,26 @@ def aggregate_batched_matches(batch, region, summoner_id):
       match_id = int(m_id)
       matchlist.append(cass.get_match(id=match_id, region=region))
 
-  pool = Pool(len(matchlist))
-  pool.map(load_match, matchlist)
-  pool.close()
-  pool.join()
+  
+  #pool.map(load_match, matchlist)
+
+
+  loop = asyncio.get_event_loop()
+  tasks = [asyncio.ensure_future(fetch(m)) for m in matchlist]
+  loop.run_until_complete(asyncio.wait(tasks))
 
 
 
 def load_match(match):
     match.load()
+
+
+async def fetch(match):
+    await match.load()
+
+
+
+
 
 
 #for i in range(0, 1000):
