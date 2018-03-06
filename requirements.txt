@@ -5,6 +5,7 @@ billiard==3.5.0.3
 git+git://github.com/meraki-analytics/merakicommons.git@master
 git+git://github.com/meraki-analytics/cassiopeia.git@master
 git+git://github.com/meraki-analytics/cassiopeia-plugins.git@master#subdirectory=cassiopeia-championgg
+git+git://github.com/meraki-analytics/role-identification.git@master
 celery==4.1.0
 certifi==2017.11.5
 datapipelines==1.0.5
@@ -23,7 +24,6 @@ psycopg2==2.7.3.2
 pycurl==7.43.0
 pytz==2017.3
 redis==2.10.6
-role-identification==0.0.1
 ujson==1.35
 vine==1.1.4
 whitenoise==3.3.1
