@@ -23,5 +23,7 @@ psycopg2==2.7.3.2
 pycurl==7.43.0
 pytz==2017.3
 redis==2.10.6
+role-identification==0.0.1
+ujson==1.35
 vine==1.1.4
 whitenoise==3.3.1
