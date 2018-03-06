@@ -31,12 +31,8 @@ class ChampionMatchups(models.Model):
         unique_together = (("champ_id", "role", "enemy_champ_id"),)
 
 class ChampionItems(models.Model):
-    champ_id = models.IntegerField()
-    item_id = models.IntegerField()
-    occurence = models.IntegerField(default=0)
-
-    class Meta:
-        unique_together = (("champ_id", "item_id"),)
+    champ_id = models.IntegerField(primary_key=True)
+    item_blob = models.TextField(default="{}")
 
 
 '''
@@ -55,11 +51,10 @@ class UserChampionItems(models.Model):
     region = models.CharField(max_length=10)
     champ_id = models.IntegerField()
     lane = models.CharField(max_length=50)
-    item_id = models.IntegerField()
-    occurence = models.IntegerField(default=0)
+    item_blob = models.TextField(default="{}")
 
     class Meta:
-        unique_together = (("user_id", "region", "champ_id", "lane", "item_id"),)
+        unique_together = (("user_id", "region", "champ_id", "lane"),)
 
 
 class UserChampionRunes(models.Model):
@@ -104,13 +99,10 @@ class UserChampionVersusStats(models.Model):
     user_id = models.IntegerField()
     region = models.CharField(max_length=10)
     champ_id = models.IntegerField()
-    enemy_champ_id = models.IntegerField()
-    wins = models.IntegerField(default=0)
-    losses = models.IntegerField(default=0)
-    total_games = models.IntegerField(default=0)
+    versus_blob = models.TextField(default="{}")
 
     class Meta:
-        unique_together = (("user_id", "region", "champ_id", "enemy_champ_id"),)
+        unique_together = (("user_id", "region", "champ_id"),)
 
 class UserChampionStats(models.Model):
     user_id = models.IntegerField()

@@ -330,10 +330,14 @@ def get_user_champion_stats(summoner_name, region, champion_id):
 
     try:
         championItems = {}
-        items = UserChampionItems.objects.raw('SELECT * FROM api_userchampionitems ci INNER JOIN api_items i ON ci.item_id = i.item_id WHERE ci.user_id = %s AND ci.champ_id = %s ORDER BY ci.occurence DESC' % (summoner.id, champion_id))
+        items = UserChampionItems.objects.filter(user_id=summoner.id, region=region, champ_id=champion_id)
+        item_blob = ujson.loads(items.item_blob)
+
+        #### FIX THIS ####
+
 
         # top
-        boots = [item.item_id for item in items if item.item_type == Consts.ITEM_BOOTS and item.lane == cass.data.Lane.top_lane.value]
+        boots = [item for item in items.items() if item.item_type == Consts.ITEM_BOOTS and item.lane == cass.data.Lane.top_lane.value]
         all_items = [item.item_id for item in items if item.item_type == Consts.ITEM_CORE and item.lane == cass.data.Lane.top_lane.value]
         itemset = {}
         itemset['items'] = all_items
@@ -622,6 +626,8 @@ def get_current_match_details(summoner_name, region, champion_id):
     build = {}
 
     # get recommended build
+
+    ##### FIX THIS #####
     try:
         items = ChampionItems.objects.raw('SELECT * FROM api_championitems ci INNER JOIN api_items i ON ci.item_id = i.item_id AND ci.champ_id = %s ORDER BY ci.occurence DESC' % champion_id)
         boots = [item.item_id for item in items if item.item_type == Consts.ITEM_BOOTS]

@@ -5,13 +5,11 @@ from django.conf import settings
 
 import cassiopeia as cass
 
-import json
+import ujson
 import datetime
 from multiprocessing.dummy import Pool
-from itertools import repeat
 import time
 import os
-import gc
 
 from api.models import ProfileStats, Matches, MatchLawn, UserChampionStats, ChampionStats, ChampionItems, UserChampionVersusStats, UserChampionItems, UserChampionRunes, UserChampionSummoners
 
@@ -19,7 +17,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-@shared_task(retry_backoff=True, max_retries=5)
+@shared_task(retry_backoff=True, max_retries=3)
 def aggregate_users(summoner_id, region, max_aggregations=-1):
     try:
         # init
@@ -49,7 +47,8 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
                 #aggregate_user_match.delay(region=region, summoner_id=summoner_id, match_id=match.id)
                 batch.append(match.id)
 
-                if len(batch) == settings.AGGREGATION_BATCH_SIZE:
+                if len(batch) == 25:
+                    
                     aggregate_batched_matches.delay(batch, region, summoner_id)
                     batch = []
                 count += 1
@@ -57,6 +56,7 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
             index += 100
 
             if len(batch) > 0:
+                
                 aggregate_batched_matches.delay(batch, region, summoner_id)
                 
             if len(recent_matches) == 0:
@@ -68,11 +68,13 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
         aggregate_users.retry(exc=e)
 
 
-@shared_task(retry_backoff=True)
+@shared_task(retry_backoff=True, max_retries=3)
 def aggregate_batched_matches(batch, region, summoner_id):
     try:
         # init
         cass.get_realms(region=region).load()
+
+        old = time.time() * 1000
 
         matchlist = []
         for m_id in batch:
@@ -83,20 +85,11 @@ def aggregate_batched_matches(batch, region, summoner_id):
         pool.map(load_match, matchlist)
         pool.close()
         pool.join()
-
-        #print("fetch:", time.time()*1000 - old)
-
-        #for match in matchlist:
-        #    aggregate_user_match(match, summoner_id, region)
+        print("fetch:", time.time()*1000 - old)
 
         old = time.time() * 1000
         aggregate_user_matches(matchlist, summoner_id, region)
         print("total:", time.time()*1000 - old)
-
-        #pool = Pool(20)
-        #pool.starmap(aggregate_user_match, zip(matchlist, repeat(summoner_id), repeat(region)))
-        #pool.close()
-        #pool.join()
 
     except Exception as e:
         if pool is not None:
@@ -110,8 +103,6 @@ def load_match(match):
 
 
 def aggregate_user_matches(matchlist, summoner_id, region):
-    oldtime = time.time() * 1000
-
     profile_data = {
         'wins': 0,
         'losses': 0,
@@ -191,61 +182,65 @@ def aggregate_user_matches(matchlist, summoner_id, region):
         else:
             lawn_data[date]['losses'] += 1
 
-
+        
         # 
         # Matches
         #
-        with transaction.atomic():
-            m, created = Matches.objects.select_for_update().get_or_create(
+        killing_spree = 0
+        if user.stats.penta_kills > 0:
+            killing_spree = 5
+        elif user.stats.quadra_kills > 0:
+            killing_spree = 4
+        elif user.stats.triple_kills > 0:
+            killing_spree = 3
+        elif user.stats.double_kills > 0:
+            killing_spree = 2
+        elif user.stats.kills > 0:
+            killing_spree = 1
+        try:
+            m = Matches.objects.create(
                 user_id=summoner_id,
                 match_id=match.id,
-                region=match.region.value
+                region=match.region.value,
+                season_id=season_id,
+                queue_id=cass.data.QUEUE_IDS[match.queue],
+                timestamp=match.creation.timestamp,
+                duration=match.duration.total_seconds(),
+                champ_id=user.champion.id,
+                participant_id=user.id,
+                item0=items[0],
+                item1=items[1],
+                item2=items[2],
+                item3=items[3],
+                item4=items[4],
+                item5=items[5],
+                item6=items[6],
+                spell0=user.summoner_spell_d.id,
+                spell1=user.summoner_spell_f.id,
+                deaths=user.stats.deaths,
+                assists=user.stats.assists,
+                cs=user.stats.total_minions_killed,
+                gold=user.stats.gold_earned,
+                level=user.stats.level,
+                wards_placed=wards_placed,
+                wards_killed=wards_killed,
+                vision_wards_bought=user.stats.vision_wards_bought_in_game,
+                game_type=match.mode.value,
+                lane=lane,
+                role=role,
+                team=user.side.value,
+                winner=100 if match.blue_team.win else 200,
+                won=user.stats.win,
+                is_remake=match.is_remake,
+                killing_spree=killing_spree,
+                red_team = match.red_team.to_json(),
+                blue_team = match.blue_team.to_json()
             )
-            m.season_id = season_id
-            m.queue_id = cass.data.QUEUE_IDS[match.queue]
-            m.timestamp = match.creation.timestamp
-            m.duration = match.duration.total_seconds()
-            m.champ_id = user.champion.id
-            m.participant_id = user.id
-            m.item0 = items[0]
-            m.item1 = items[1]
-            m.item2 = items[2]
-            m.item3 = items[3]
-            m.item4 = items[4]
-            m.item5 = items[5]
-            m.item6 = items[6]
-            m.spell0 = user.summoner_spell_d.id
-            m.spell1 = user.summoner_spell_f.id
-            m.deaths = user.stats.deaths
-            m.assists = user.stats.assists
-            m.cs = user.stats.total_minions_killed
-            m.gold = user.stats.gold_earned
-            m.level = user.stats.level
-            m.wards_placed = wards_placed
-            m.wards_killed = wards_killed
-            m.vision_wards_bought = user.stats.vision_wards_bought_in_game
-            m.game_type = match.mode.value
-            m.lane = lane
-            m.role = role
-            m.team = user.side.value
-            m.winner = 100 if match.blue_team.win else 200
-            m.won = user.stats.win
-            m.is_remake = match.is_remake
-            m.red_team = match.red_team.to_json()
-            m.blue_team = match.blue_team.to_json()
-            if user.stats.penta_kills > 0:
-                m.killing_spree = 5
-            elif user.stats.quadra_kills > 0:
-                m.killing_spree = 4
-            elif user.stats.triple_kills > 0:
-                m.killing_spree = 3
-            elif user.stats.double_kills > 0:
-                m.killing_spree = 2
-            elif user.stats.kills > 0:
-                m.killing_spree = 1
-            m.save()
+        except:
+            log.warn("Duplicate match %d" % match_id)
+            return
 
-
+        
         #
         # UserChampionStats
         #
@@ -284,35 +279,36 @@ def aggregate_user_matches(matchlist, summoner_id, region):
                 ucs.total_games40 += 1
             elif match.duration.seconds > 40 * 60:
                 ucs.total_games40p += 1
-            try:
-                if match.duration.seconds > 10 * 60:
-                    ucs.gold10 = (ucs.gold10 * (ucs.total_games - 1) + user.timeline.gold_per_min_deltas['0-10']) / ucs.total_games
-                    ucs.cs10 = (ucs.cs10 * (ucs.total_games - 1) + user.timeline.creeps_per_min_deltas['0-10']) / ucs.total_games
-                    ucs.xp10 = (ucs.xp10 * (ucs.total_games - 1) + user.timeline.xp_per_min_deltas['0-10']) / ucs.total_games
-                    ucs.dmg_taken10 = (ucs.dmg_taken10 * (ucs.total_games - 1) + user.timeline.damage_taken_per_min_deltas['0-10']) / ucs.total_games
+            has_diffs = hasattr(user.timeline, 'cs_diff_per_min_deltas')
+            if match.duration.seconds > 10 * 60:
+                ucs.gold10 = (ucs.gold10 * (ucs.total_games - 1) + user.timeline.gold_per_min_deltas['0-10']) / ucs.total_games
+                ucs.cs10 = (ucs.cs10 * (ucs.total_games - 1) + user.timeline.creeps_per_min_deltas['0-10']) / ucs.total_games
+                ucs.xp10 = (ucs.xp10 * (ucs.total_games - 1) + user.timeline.xp_per_min_deltas['0-10']) / ucs.total_games
+                ucs.dmg_taken10 = (ucs.dmg_taken10 * (ucs.total_games - 1) + user.timeline.damage_taken_per_min_deltas['0-10']) / ucs.total_games
+                if has_diffs:
                     ucs.cs_diff10 = (ucs.cs_diff10 * (ucs.total_games - 1) + user.timeline.cs_diff_per_min_deltas['0-10']) / ucs.total_games
                     ucs.xp_diff10 = (ucs.xp_diff10 * (ucs.total_games - 1) + user.timeline.xp_diff_per_min_deltas['0-10']) / ucs.total_games
                     ucs.dmg_taken_diff10 = (ucs.dmg_taken_diff10 * (ucs.total_games - 1) + user.timeline.damage_taken_diff_per_min_deltas['0-10']) / ucs.total_games
-                if match.duration.seconds > 20 * 60:
-                    ucs.gold20 = (ucs.gold20 * (ucs.total_games - 1) + user.timeline.gold_per_min_deltas['10-20']) / ucs.total_games
-                    ucs.cs20 = (ucs.cs20 * (ucs.total_games - 1) + user.timeline.creeps_per_min_deltas['10-20']) / ucs.total_games
-                    ucs.xp20 = (ucs.xp20 * (ucs.total_games - 1) + user.timeline.xp_per_min_deltas['10-20']) / ucs.total_games
-                    ucs.dmg_taken20 = (ucs.dmg_taken20 * (ucs.total_games - 1) + user.timeline.damage_taken_per_min_deltas['10-20']) / ucs.total_games
+            if match.duration.seconds > 20 * 60:
+                ucs.gold20 = (ucs.gold20 * (ucs.total_games - 1) + user.timeline.gold_per_min_deltas['10-20']) / ucs.total_games
+                ucs.cs20 = (ucs.cs20 * (ucs.total_games - 1) + user.timeline.creeps_per_min_deltas['10-20']) / ucs.total_games
+                ucs.xp20 = (ucs.xp20 * (ucs.total_games - 1) + user.timeline.xp_per_min_deltas['10-20']) / ucs.total_games
+                ucs.dmg_taken20 = (ucs.dmg_taken20 * (ucs.total_games - 1) + user.timeline.damage_taken_per_min_deltas['10-20']) / ucs.total_games
+                if has_diffs:
                     ucs.cs_diff20 = (ucs.cs_diff20 * (ucs.total_games - 1) + user.timeline.cs_diff_per_min_deltas['10-20']) / ucs.total_games
                     ucs.xp_diff20 = (ucs.xp_diff20 * (ucs.total_games - 1) + user.timeline.xp_diff_per_min_deltas['10-20']) / ucs.total_games
                     ucs.dmg_taken_diff20 = (ucs.dmg_taken_diff20 * (ucs.total_games - 1) + user.timeline.damage_taken_diff_per_min_deltas['10-20']) / ucs.total_games
-                if match.duration.seconds > 30 * 60:
-                    ucs.gold30 = (ucs.gold30 * (ucs.total_games - 1) + user.timeline.gold_per_min_deltas['20-30']) / ucs.total_games
-                    ucs.cs30 = (ucs.cs30 * (ucs.total_games - 1) + user.timeline.creeps_per_min_deltas['20-30']) / ucs.total_games
-                    ucs.xp30 = (ucs.xp30 * (ucs.total_games - 1) + user.timeline.xp_per_min_deltas['20-30']) / ucs.total_games
-                    ucs.dmg_taken30 = (ucs.dmg_taken30 * (ucs.total_games - 1) + user.timeline.damage_taken_per_min_deltas['20-30']) / ucs.total_games
+            if match.duration.seconds > 30 * 60:
+                ucs.gold30 = (ucs.gold30 * (ucs.total_games - 1) + user.timeline.gold_per_min_deltas['20-30']) / ucs.total_games
+                ucs.cs30 = (ucs.cs30 * (ucs.total_games - 1) + user.timeline.creeps_per_min_deltas['20-30']) / ucs.total_games
+                ucs.xp30 = (ucs.xp30 * (ucs.total_games - 1) + user.timeline.xp_per_min_deltas['20-30']) / ucs.total_games
+                ucs.dmg_taken30 = (ucs.dmg_taken30 * (ucs.total_games - 1) + user.timeline.damage_taken_per_min_deltas['20-30']) / ucs.total_games
+                if has_diffs:
                     ucs.cs_diff30 = (ucs.cs_diff30 * (ucs.total_games - 1) + user.timeline.cs_diff_per_min_deltas['20-30']) / ucs.total_games
                     ucs.xp_diff30 = (ucs.xp_diff30 * (ucs.total_games - 1) + user.timeline.xp_diff_per_min_deltas['20-30']) / ucs.total_games
                     ucs.dmg_taken_diff30 = (ucs.dmg_taken_diff30 * (ucs.total_games - 1) + user.timeline.damage_taken_diff_per_min_deltas['20-30']) / ucs.total_games
-            except:
-                log.warn("derping fields")
             ucs.save()
-
+               
 
         #
         # UserChampionVersusStats
@@ -343,7 +339,7 @@ def aggregate_user_matches(matchlist, summoner_id, region):
         #
         sorted_runes = [r.id for r in user.runes]
         sorted_runes.sort()
-        rune_string = json.dumps(sorted_runes)
+        rune_string = ujson.dumps(sorted_runes)
 
         if not user.champion.id in rune_data:
             rune_data[user.champion.id] = {}
@@ -360,7 +356,7 @@ def aggregate_user_matches(matchlist, summoner_id, region):
         #
         sorted_summs = [user.summoner_spell_d.id, user.summoner_spell_f.id]
         sorted_summs.sort()
-        sum_string = json.dumps(sorted_summs)
+        sum_string = ujson.dumps(sorted_summs)
 
         if not user.champion.id in spell_data:
             spell_data[user.champion.id] = {}
@@ -403,6 +399,7 @@ def aggregate_user_matches(matchlist, summoner_id, region):
                     else:
                         global_items_data[participant.champion.id][item] = 1
 
+    
     update_profile.delay(summoner_id, region, profile_data)
     update_matchlawn.delay(summoner_id, region, lawn_data)
     update_userchampionversus.delay(summoner_id, region, versus_data)
@@ -411,42 +408,54 @@ def aggregate_user_matches(matchlist, summoner_id, region):
     update_items.delay(summoner_id, region, items_data)
     update_global_items.delay(global_items_data)
 
-    print("aggr:", time.time() * 1000 - oldtime)
-
 
 @shared_task()
 def update_global_items(data):
+    t = time.time() * 1000
     for champ_id, items in data.items():
-        for item_id, occurence in items.items():
-            with transaction.atomic():
-                champ_item, created = ChampionItems.objects.select_for_update().get_or_create(
-                    champ_id=champ_id,
-                    item_id=item_id
-                )
-                champ_item.occurence = F('occurence') + occurence
-                champ_item.save()
+        with transaction.atomic():
+            champ_item, created = ChampionItems.objects.select_for_update().get_or_create(
+                champ_id=champ_id
+            )
+            cur_data = ujson.loads(champ_item.item_blob)
+            for item_id, occurence in items.items():
+                if item_id in cur_data:
+                    cur_data[item_id] += occurence
+                else:
+                    cur_data[item_id] = occurence
+            new_data = ujson.dumps(cur_data)
+            champ_item.item_blob = new_data
+            champ_item.save()
+    print("ugi:", time.time() *1000 - t)
 
 
 @shared_task()
 def update_items(summoner_id, region, data):
+    t = time.time() * 1000
     for champ_id, lanes in data.items():
         for lane, items in lanes.items():
-            for item_id, occurence in items.items():
-                with transaction.atomic():
-                    uci, created = UserChampionItems.objects.select_for_update().get_or_create(
-                        user_id=summoner_id, 
-                        region=region,
-                        lane=lane, 
-                        champ_id=champ_id, 
-                        item_id=item_id,
-                        defaults={'occurence': 0}
-                    )
-                    uci.occurence = F('occurence') + occurence
-                    uci.save()
+            with transaction.atomic():
+                uci, created = UserChampionItems.objects.select_for_update().get_or_create(
+                    user_id=summoner_id, 
+                    region=region,
+                    lane=lane, 
+                    champ_id=champ_id
+                )
+                cur_data = ujson.loads(uci.item_blob)
+                for item_id, occurence in items.items():
+                    if item_id in cur_data:
+                        cur_data[item_id] += occurence
+                    else:
+                        cur_data[item_id] = occurence
+                new_data = ujson.dumps(cur_data)
+                uci.item_blob = new_data
+                uci.save()
+    print("ui:", time.time() *1000 - t)
 
 
 @shared_task()
 def update_spells(summoner_id, region, data):
+    t = time.time() * 1000
     for champ_id, lanes in data.items():
         for lane, sum_strings in lanes.items():
             for sum_string, occurence in sum_strings.items():
@@ -461,10 +470,11 @@ def update_spells(summoner_id, region, data):
                     )
                     ucs.occurence = F('occurence') + occurence
                     ucs.save()
-
+    print("us:", time.time() *1000 - t)
 
 @shared_task()
 def update_runes(summoner_id, region, data):
+    t = time.time() * 1000
     for champ_id, lanes in data.items():
         for lane, rune_strings in lanes.items():
             for rune_string, occurence in rune_strings.items():
@@ -479,32 +489,35 @@ def update_runes(summoner_id, region, data):
                     )
                     ucr.occurence = F('occurence') + occurence
                     ucr.save()
-
+    print("ur:", time.time() *1000 - t)
 
 @shared_task()
 def update_userchampionversus(summoner_id, region, data):
+    t = time.time() * 1000
     for champ_id, enemies_data in data.items():
-        for enemy_id, enemy_data in enemies_data.items():
-            with transaction.atomic():
-                championv, created = UserChampionVersusStats.objects.select_for_update().get_or_create(
-                    user_id=summoner_id, 
-                    region=region, 
-                    champ_id=champ_id, 
-                    enemy_champ_id=enemy_id,
-                    defaults={
-                        'wins': 0,
-                        'losses': 0,
-                        'total_games': 0
-                    }
-                )
-                championv.total_games = F('total_games') + enemy_data['total_games']
-                championv.wins = F('wins') + enemy_data['wins']
-                championv.losses = F('losses') + enemy_data['losses']
-                championv.save()
-
+        with transaction.atomic():
+            championv, created = UserChampionVersusStats.objects.select_for_update().get_or_create(
+                user_id=summoner_id, 
+                region=region, 
+                champ_id=champ_id
+            )
+            cur_data = ujson.loads(championv.versus_blob)
+            for enemy_id, enemy_data in enemies_data.items():
+                if enemy_id in cur_data:
+                    cur_data[enemy_id]['wins'] += enemy_data['wins']
+                    cur_data[enemy_id]['losses'] += enemy_data['losses']
+                else:
+                    cur_data[enemy_id] = {}
+                    cur_data[enemy_id]['wins'] = enemy_data['wins']
+                    cur_data[enemy_id]['losses'] = enemy_data['losses']
+            new_data = ujson.dumps(cur_data)
+            championv.versus_blob = new_data
+            championv.save()
+    print("ucv:", time.time() *1000 - t)
 
 @shared_task()
 def update_matchlawn(summoner_id, region, data):
+    t = time.time() * 1000
     for date, stats in data.items():
         with transaction.atomic():
             lawn, created = MatchLawn.objects.select_for_update().get_or_create(
@@ -519,10 +532,11 @@ def update_matchlawn(summoner_id, region, data):
             lawn.wins = F('wins') + stats['wins']
             lawn.losses = F('losses') + stats['losses']
             lawn.save()
-
+    print("ml:", time.time() *1000 - t)
 
 @shared_task()
 def update_profile(summoner_id, region, data):
+    t = time.time() * 1000
     with transaction.atomic():
         try:
             profile = ProfileStats.objects.select_for_update().get(user_id=summoner_id, region=region)
@@ -535,3 +549,4 @@ def update_profile(summoner_id, region, data):
         except Exception as e:
             log.error("Summoner not created in database")
             raise e
+    print("p:", time.time() *1000 - t)
