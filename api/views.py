@@ -15,9 +15,10 @@ from cassiopeia.core import CurrentMatch
 import os
 import datetime
 import time
-import json
+import ujson
 from functools import reduce
 from multiprocessing.dummy import Pool
+import operator
 
 from .aggregator.tasks import aggregate_users
 from .models import ProfileStats, ChampionItems, ChampionStats, ChampionMatchups, UserChampionStats, Matches, MatchLawn, UserLeagues, UserChampionMasteries, UserChampionVersusStats, UserChampionItems, UserChampionRunes, UserChampionSummoners
@@ -330,43 +331,47 @@ def get_user_champion_stats(summoner_name, region, champion_id):
 
     try:
         championItems = {}
-        items = UserChampionItems.objects.filter(user_id=summoner.id, region=region, champ_id=champion_id)
-        item_blob = ujson.loads(items.item_blob)
+        uci = UserChampionItems.objects.filter(user_id=summoner.id, region=region, champ_id=champion_id)
+        
+        for uci_lane in uci:
+            boots = {}
+            core = {}
+            situational = {}
+            all_items = {}
+            items_blob = ujson.loads(uci_lane.item_blob)
 
-        #### FIX THIS ####
+            for item, occurence in items_blob.items():
+                if int(item) in Items.boots:
+                    boots[item] = occurence
+                elif int(item) in Items.full_items:
+                    all_items[item] = occurence
 
+            sorted_all = sorted(all_items, key=all_items.get, reverse=True) 
+            core_arr = sorted_all[:3]
+            situational_arr = sorted_all[3:]
 
-        # top
-        boots = [item for item in items.items() if item.item_type == Consts.ITEM_BOOTS and item.lane == cass.data.Lane.top_lane.value]
-        all_items = [item.item_id for item in items if item.item_type == Consts.ITEM_CORE and item.lane == cass.data.Lane.top_lane.value]
-        itemset = {}
-        itemset['items'] = all_items
-        itemset['boots'] = boots
-        championItems['TOP_LANE'] = itemset
+            for item in core_arr:
+                core[item] = all_items[item]
 
-        # jungle
-        boots = [item.item_id for item in items if item.item_type == Consts.ITEM_BOOTS and item.lane == cass.data.Lane.jungle.value]
-        all_items = [item.item_id for item in items if item.item_type == Consts.ITEM_CORE and item.lane == cass.data.Lane.jungle.value]
-        itemset = {}
-        itemset['items'] = all_items
-        itemset['boots'] = boots
-        championItems['JUNGLE'] = itemset
+            for item in situational_arr:
+                situational[item] = all_items[item]
 
-        # mid
-        boots = [item.item_id for item in items if item.item_type == Consts.ITEM_BOOTS and item.lane == cass.data.Lane.mid_lane.value]
-        all_items = [item.item_id for item in items if item.item_type == Consts.ITEM_CORE and item.lane == cass.data.Lane.mid_lane.value]
-        itemset = {}
-        itemset['items'] = all_items
-        itemset['boots'] = boots
-        championItems['MID_LANE'] = itemset
+            itemset = {
+                'core': core,
+                'situational': situational,
+                'boots': boots
+            }
 
-        # bot
-        boots = [item.item_id for item in items if item.item_type == Consts.ITEM_BOOTS and item.lane == cass.data.Lane.bot_lane.value]
-        all_items = [item.item_id for item in items if item.item_type == Consts.ITEM_CORE and item.lane == cass.data.Lane.bot_lane.value]
-        itemset = {}
-        itemset['items'] = all_items
-        itemset['boots'] = boots
-        championItems['BOT_LANE'] = itemset
+            if uci_lane.lane == cass.data.Lane.top_lane.value:
+                championItems['TOP_LANE'] = itemset
+            elif uci_lane.lane == cass.data.Lane.jungle.value:
+                championItems['JUNGLE'] = itemset
+            elif uci_lane.lane == cass.data.Lane.mid_lane.value:
+                championItems['MID_LANE'] = itemset
+            elif uci_lane.lane == cass.data.Lane.bot_lane.value:
+                championItems['BOT_LANE'] = itemset
+            else: # lane = NONE
+                pass
     except:
         log.warn("failed to get champ_items", stack_info=True)
         return HttpResponse(status=500)
@@ -404,7 +409,7 @@ def get_user_champion_stats(summoner_name, region, champion_id):
 def get_user_champion_stats_by_id(request):
     summoner_name = request.GET['summoner_name']
     region = normalize_region(request.GET['region'])
-    champion_id = int(['champion_id'])
+    champion_id = int(request.GET['champion_id'])
 
     return get_user_champion_stats(summoner_name, region, champion_id)
 
@@ -486,7 +491,7 @@ def get_current_match(request):
         best_order = []
         top_wr_so = 0
         for stat in champ_stats:
-            so = json.loads(stat['skill_orders'])
+            so = ujson.loads(stat['skill_orders'])
             if so['winrate'] > top_wr_so:
                 top_wr_so = so['winrate']
                 order = so['hash'].split('-')[1:]
@@ -626,18 +631,29 @@ def get_current_match_details(summoner_name, region, champion_id):
     build = {}
 
     # get recommended build
+    champ_items = ChampionItems.objects.get(champ_id=user.champion.id)
+    items_blob = ujson.loads(champ_items.item_blob)
 
-    ##### FIX THIS #####
-    try:
-        items = ChampionItems.objects.raw('SELECT * FROM api_championitems ci INNER JOIN api_items i ON ci.item_id = i.item_id AND ci.champ_id = %s ORDER BY ci.occurence DESC' % champion_id)
-        boots = [item.item_id for item in items if item.item_type == Consts.ITEM_BOOTS]
-        all_items = [item.item_id for item in items if item.item_type == Consts.ITEM_CORE]
-        core = all_items[:3]
-        situational = all_items[3:8]
-    except:
-        boots = []
-        core = []
-        situational = []
+    boots = {}
+    core = {}
+    situational = {}
+    all_items = {}
+
+    for item, occurence in items_blob.items():
+        if int(item) in Items.boots:
+            boots[item] = occurence
+        elif int(item) in Items.full_items:
+            all_items[item] = occurence
+
+    sorted_all = sorted(all_items, key=all_items.get, reverse=True) 
+    core_arr = sorted_all[:3]
+    situational_arr = sorted_all[3:8]
+
+    for item in core_arr:
+        core[item] = all_items[item]
+
+    for item in situational_arr:
+        situational[item] = all_items[item]
 
     build['boots'] = boots
     build['core'] = core
@@ -692,7 +708,7 @@ def get_match_timeline(request):
         pass
 
     response = {}
-    response['timeline'] = json.loads(timeline.to_json())
-    response['match'] = json.loads(match.to_json())
+    response['timeline'] = ujson.loads(timeline.to_json())
+    response['match'] = ujson.loads(match.to_json())
 
     return JsonResponse(response)
