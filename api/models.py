@@ -39,6 +39,7 @@ class ChampionItems(models.Model):
         unique_together = (("champ_id", "item_id"),)
 
 
+'''
 class ChampionRunes(models.Model):
     champ_id = models.IntegerField()
     rune_id = models.IntegerField()
@@ -46,32 +47,31 @@ class ChampionRunes(models.Model):
 
     class Meta:
         unique_together = (("champ_id", "rune_id"),)
+'''
 
 
 class UserChampionItems(models.Model):
     user_id = models.IntegerField()
     region = models.CharField(max_length=10)
     champ_id = models.IntegerField()
-    season_id = models.IntegerField()
     lane = models.CharField(max_length=50)
     item_id = models.IntegerField()
     occurence = models.IntegerField(default=0)
 
     class Meta:
-        unique_together = (("user_id", "region", "season_id", "champ_id", "lane", "item_id"),)
+        unique_together = (("user_id", "region", "champ_id", "lane", "item_id"),)
 
 
 class UserChampionRunes(models.Model):
     user_id = models.IntegerField()
     region = models.CharField(max_length=10)
     champ_id = models.IntegerField()
-    season_id = models.IntegerField()
     lane = models.CharField(max_length=50)
     rune_set = models.TextField()
     occurence = models.IntegerField(default=0)
 
     class Meta:
-        unique_together = (("user_id", "region", "season_id", "champ_id", "lane", "rune_set"),)
+        unique_together = (("user_id", "region", "champ_id", "lane", "rune_set"),)
 
 
 class UserChampionMasteries(models.Model):
@@ -92,19 +92,17 @@ class UserChampionSummoners(models.Model):
     user_id = models.IntegerField()
     region = models.CharField(max_length=10)
     champ_id = models.IntegerField()
-    season_id = models.IntegerField()
     lane = models.CharField(max_length=50)
     summoner_set = models.TextField()
     occurence = models.IntegerField(default=0)
 
     class Meta:
-        unique_together = (("user_id", "region", "season_id", "champ_id", "lane", "summoner_set"),)
+        unique_together = (("user_id", "region", "champ_id", "lane", "summoner_set"),)
 
 
 class UserChampionVersusStats(models.Model):
     user_id = models.IntegerField()
     region = models.CharField(max_length=10)
-    season_id = models.IntegerField()
     champ_id = models.IntegerField()
     enemy_champ_id = models.IntegerField()
     wins = models.IntegerField(default=0)
@@ -112,7 +110,7 @@ class UserChampionVersusStats(models.Model):
     total_games = models.IntegerField(default=0)
 
     class Meta:
-        unique_together = (("user_id", "region", "season_id", "champ_id", "enemy_champ_id"),)
+        unique_together = (("user_id", "region", "champ_id", "enemy_champ_id"),)
 
 class UserChampionStats(models.Model):
     user_id = models.IntegerField()
@@ -216,7 +214,7 @@ class UserAccolades(models.Model):
 class MatchLawn(models.Model):
     user_id = models.IntegerField()
     region = models.CharField(max_length=10)
-    date = models.DateField()
+    date = models.TextField()
     wins = models.IntegerField(default=0)
     losses = models.IntegerField(default=0)
 

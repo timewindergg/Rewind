@@ -19,7 +19,7 @@ import json
 from functools import reduce
 from multiprocessing.dummy import Pool
 
-from .aggregator.tasks import aggregate_users, aggregate_user_match, aggregate_global_stats
+from .aggregator.tasks import aggregate_users
 from .models import ProfileStats, ChampionItems, ChampionStats, ChampionMatchups, UserChampionStats, Matches, MatchLawn, UserLeagues, UserChampionMasteries, UserChampionVersusStats, UserChampionItems, UserChampionRunes, UserChampionSummoners
 from . import items as Items
 from . import consts as Consts
@@ -330,7 +330,7 @@ def get_user_champion_stats(summoner_name, region, champion_id):
 
     try:
         championItems = {}
-        items = UserChampionItems.objects.raw('SELECT * FROM api_userchampionitems ci INNER JOIN api_items i ON ci.item_id = i.item_id WHERE ci.user_id = %s AND ci.champ_id = %s AND ci.season_id = 11 ORDER BY ci.occurence DESC' % (summoner.id, champion_id))
+        items = UserChampionItems.objects.raw('SELECT * FROM api_userchampionitems ci INNER JOIN api_items i ON ci.item_id = i.item_id WHERE ci.user_id = %s AND ci.champ_id = %s ORDER BY ci.occurence DESC' % (summoner.id, champion_id))
 
         # top
         boots = [item.item_id for item in items if item.item_type == Consts.ITEM_BOOTS and item.lane == cass.data.Lane.top_lane.value]
