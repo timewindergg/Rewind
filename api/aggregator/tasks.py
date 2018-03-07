@@ -44,7 +44,6 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
                     updated = True
                     break
 
-                #aggregate_user_match.delay(region=region, summoner_id=summoner_id, match_id=match.id)
                 batch.append(match.id)
 
                 if len(batch) == 25:
@@ -56,7 +55,6 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
             index += 100
 
             if len(batch) > 0:
-                
                 aggregate_batched_matches.delay(batch, region, summoner_id)
                 
             if len(recent_matches) == 0:
@@ -126,7 +124,8 @@ def aggregate_user_matches(matchlist, summoner_id, region):
             log.warn("Error checking is_ranked in aggregate_user_match")
             is_ranked = False
 
-        for participant in match.participants:
+        participants = match.participants
+        for participant in participants:
             if participant.summoner.id == summoner_id:
                 user = participant
                 break
@@ -153,7 +152,8 @@ def aggregate_user_matches(matchlist, summoner_id, region):
 
         season_id = cass.data.SEASON_IDS[match.season]
 
-        items = [item.id if item else 0 for item in user.stats.items]
+        user_items = user.stats.items
+        items = [item.id if item else 0 for item in user_items]
 
 
         #
@@ -337,7 +337,8 @@ def aggregate_user_matches(matchlist, summoner_id, region):
         #
         # Runes
         #
-        sorted_runes = [r.id for r in user.runes]
+        user_runes = user.runes
+        sorted_runes = [r.id for r in user_runes]
         sorted_runes.sort()
         rune_string = ujson.dumps(sorted_runes)
 
@@ -371,8 +372,8 @@ def aggregate_user_matches(matchlist, summoner_id, region):
         #
         # Items
         #
-        user_items = [item.id for item in user.stats.items[0:6] if item]
-        user_items = list(set(user_items))
+        user_items = user.stats.items[0:6]
+        user_items = {item.id for item in user_items if item}
         for item in user_items:
             if not user.champion.id in items_data:
                 items_data[user.champion.id] = {}

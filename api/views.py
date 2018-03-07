@@ -376,7 +376,8 @@ def get_user_champion_stats(summoner_name, region, champion_id):
             all_items = {}
             items_blob = ujson.loads(uci_lane.item_blob)
 
-            for item, occurence in items_blob.items():
+            blob_items = items_blob.items()
+            for item, occurence in blob_items:
                 if int(item) in Items.boots:
                     boots[item] = occurence
                 elif int(item) in Items.full_items:
@@ -482,8 +483,10 @@ def get_current_match(request):
     winrates = {}
     skill_orders_response = {}
 
-    blue_team_champs = [p.champion.id for p in m.teams[0].participants]
-    red_team_champs = [p.champion.id for p in m.teams[1].participants]
+    participants = m.teams[0].participants
+    blue_team_champs = [p.champion.id for p in participants]
+    participants = m.teams[1].participants
+    red_team_champs = [p.champion.id for p in participants]
 
     # champion winrates
     wr_matrix = {}
@@ -506,7 +509,8 @@ def get_current_match(request):
                 
     red_team = []
     blue_team = []
-    for participant in m.participants:
+    participants = m.participants
+    for participant in participants:
         p = {}
         p['id'] = participant.summoner.id
         p['champion_id'] = participant.champion.id
@@ -534,8 +538,10 @@ def get_current_match(request):
                 best_order = order
         skill_orders_response[participant.champion.id] = best_order
 
-    blue_bans = [v.id for k, v in m.teams[0].bans.items()]
-    red_bans = [v.id for k, v in m.teams[1].bans.items()]
+    bans = m.teams[0].bans.items()
+    blue_bans = [v.id for k, v in bans]
+    bans = m.teams[1].bans.items()
+    red_bans = [v.id for k, v in bans]
 
     queue = {}
     queue['id'] = m.queue.id
@@ -616,7 +622,8 @@ def get_current_match_details(summoner_name, region, champion_id):
     gold20 = 0
     gold30 = 0
     for match in matchlist:
-        for participant in match.participants:
+        participants = match.participants
+        for participant in participants:
             if participant.summoner.id == s.id and hasattr(participant, "timeline"):
                 user = participant
                 break
@@ -675,7 +682,8 @@ def get_current_match_details(summoner_name, region, champion_id):
     situational = {}
     all_items = {}
 
-    for item, occurence in items_blob.items():
+    blob_items = items_blob.items()
+    for item, occurence in blob_items:
         if int(item) in Items.boots:
             boots[item] = occurence
         elif int(item) in Items.full_items:
