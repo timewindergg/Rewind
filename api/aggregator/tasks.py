@@ -287,32 +287,32 @@ def aggregate_user_matches(matchlist, summoner_id, region):
                 ucs.total_games40p = F('total_games40p') + 1
             has_diffs = hasattr(user.timeline, 'cs_diff_per_min_deltas')
             if match.duration.seconds > 10 * 60:
-                ucs.gold10 = (F('gold10') * (F('total_games') - 1) + user.timeline.gold_per_min_deltas['0-10']) / F('total_games')
-                ucs.cs10 = (F('cs10') * (F('total_games') - 1) + user.timeline.creeps_per_min_deltas['0-10']) / F('total_games')
-                ucs.xp10 = (F('xp10') * (F('total_games') - 1) + user.timeline.xp_per_min_deltas['0-10']) / F('total_games')
-                ucs.dmg_taken10 = (F('dmg_taken10') * (F('total_games') - 1) + user.timeline.damage_taken_per_min_deltas['0-10']) / F('total_games')
+                ucs.gold10 = (F('gold10') * F('total_games') + user.timeline.gold_per_min_deltas['0-10']) / (F('total_games') + 1)
+                ucs.cs10 = (F('cs10') * F('total_games') + user.timeline.creeps_per_min_deltas['0-10']) / (F('total_games') + 1)
+                ucs.xp10 = (F('xp10') * F('total_games') + user.timeline.xp_per_min_deltas['0-10']) / (F('total_games') + 1)
+                ucs.dmg_taken10 = (F('dmg_taken10') * F('total_games') + user.timeline.damage_taken_per_min_deltas['0-10']) / (F('total_games') + 1)
                 if has_diffs:
-                    ucs.cs_diff10 = (F('cs_diff10') * (F('total_games') - 1) + user.timeline.cs_diff_per_min_deltas['0-10']) / F('total_games')
-                    ucs.xp_diff10 = (F('xp_diff10') * (F('total_games') - 1) + user.timeline.xp_diff_per_min_deltas['0-10']) / F('total_games')
-                    ucs.dmg_taken_diff10 = (F('dmg_taken_diff10') * (F('total_games') - 1) + user.timeline.damage_taken_diff_per_min_deltas['0-10']) / F('total_games')
+                    ucs.cs_diff10 = (F('cs_diff10') * F('total_games') + user.timeline.cs_diff_per_min_deltas['0-10']) / (F('total_games') + 1)
+                    ucs.xp_diff10 = (F('xp_diff10') * F('total_games') + user.timeline.xp_diff_per_min_deltas['0-10']) / (F('total_games') + 1)
+                    ucs.dmg_taken_diff10 = (F('dmg_taken_diff10') * F('total_games') + user.timeline.damage_taken_diff_per_min_deltas['0-10']) / (F('total_games') + 1)
             if match.duration.seconds > 20 * 60:
-                ucs.gold20 = (F('gold20') * (F('total_games') - 1) + user.timeline.gold_per_min_deltas['10-20']) / F('total_games')
-                ucs.cs20 = (F('cs20') * (F('total_games') - 1) + user.timeline.creeps_per_min_deltas['10-20']) / F('total_games')
-                ucs.xp20 = (F('xp20') * (F('total_games') - 1) + user.timeline.xp_per_min_deltas['10-20']) / F('total_games')
-                ucs.dmg_taken20 = (F('dmg_taken20') * (F('total_games') - 1) + user.timeline.damage_taken_per_min_deltas['10-20']) / F('total_games')
+                ucs.gold20 = (F('gold20') * F('total_games') + user.timeline.gold_per_min_deltas['10-20']) / (F('total_games') + 1)
+                ucs.cs20 = (F('cs20') * F('total_games') + user.timeline.creeps_per_min_deltas['10-20']) / (F('total_games') + 1)
+                ucs.xp20 = (F('xp20') * F('total_games') + user.timeline.xp_per_min_deltas['10-20']) / (F('total_games') + 1)
+                ucs.dmg_taken20 = (F('dmg_taken20') * F('total_games') + user.timeline.damage_taken_per_min_deltas['10-20']) / (F('total_games') + 1)
                 if has_diffs:
-                    ucs.cs_diff20 = (F('cs_diff20') * (F('total_games') - 1) + user.timeline.cs_diff_per_min_deltas['10-20']) / F('total_games')
-                    ucs.xp_diff20 = (F('xp_diff20') * (F('total_games') - 1) + user.timeline.xp_diff_per_min_deltas['10-20']) / F('total_games')
-                    ucs.dmg_taken_diff20 = (F('dmg_taken_diff20') * (F('total_games') - 1) + user.timeline.damage_taken_diff_per_min_deltas['10-20']) / F('total_games')
+                    ucs.cs_diff20 = (F('cs_diff20') * F('total_games') + user.timeline.cs_diff_per_min_deltas['10-20']) / (F('total_games') + 1)
+                    ucs.xp_diff20 = (F('xp_diff20') * F('total_games') + user.timeline.xp_diff_per_min_deltas['10-20']) / (F('total_games') + 1)
+                    ucs.dmg_taken_diff20 = (F('dmg_taken_diff20') * F('total_games') + user.timeline.damage_taken_diff_per_min_deltas['10-20']) / (F('total_games') + 1)
             if match.duration.seconds > 30 * 60:
-                ucs.gold30 = (F('gold30') * (F('total_games') - 1) + user.timeline.gold_per_min_deltas['20-30']) / F('total_games')
-                ucs.cs30 = (F('cs30') * (F('total_games') - 1) + user.timeline.creeps_per_min_deltas['20-30']) / F('total_games')
-                ucs.xp30 = (F('xp30') * (F('total_games') - 1) + user.timeline.xp_per_min_deltas['20-30']) / F('total_games')
-                ucs.dmg_taken30 = (F('dmg_taken30') * (F('total_games') - 1) + user.timeline.damage_taken_per_min_deltas['20-30']) / F('total_games')
+                ucs.gold30 = (F('gold30') * F('total_games') + user.timeline.gold_per_min_deltas['20-30']) / (F('total_games') + 1)
+                ucs.cs30 = (F('cs30') * F('total_games') + user.timeline.creeps_per_min_deltas['20-30']) / (F('total_games') + 1)
+                ucs.xp30 = (F('xp30') * F('total_games') + user.timeline.xp_per_min_deltas['20-30']) / (F('total_games') + 1)
+                ucs.dmg_taken30 = (F('dmg_taken30') * F('total_games') + user.timeline.damage_taken_per_min_deltas['20-30']) / (F('total_games') + 1)
                 if has_diffs:
-                    ucs.cs_diff30 = (F('cs_diff30') * (F('total_games') - 1) + user.timeline.cs_diff_per_min_deltas['20-30']) / F('total_games')
-                    ucs.xp_diff30 = (F('xp_diff30') * (F('total_games') - 1) + user.timeline.xp_diff_per_min_deltas['20-30']) / F('total_games')
-                    ucs.dmg_taken_diff30 = (F('dmg_taken_diff30') * (F('total_games') - 1) + user.timeline.damage_taken_diff_per_min_deltas['20-30']) / F('total_games')
+                    ucs.cs_diff30 = (F('cs_diff30') * F('total_games') + user.timeline.cs_diff_per_min_deltas['20-30']) / (F('total_games') + 1)
+                    ucs.xp_diff30 = (F('xp_diff30') * F('total_games') + user.timeline.xp_diff_per_min_deltas['20-30']) / (F('total_games') + 1)
+                    ucs.dmg_taken_diff30 = (F('dmg_taken_diff30') * F('total_games') + user.timeline.damage_taken_diff_per_min_deltas['20-30']) / (F('total_games') + 1)
             ucs.save()
                
 
