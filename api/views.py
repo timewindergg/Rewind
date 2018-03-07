@@ -72,8 +72,44 @@ cass.apply_settings({
     "DDragon": {},
 
     "RiotAPI": {
-      "api_key": os.environ["RIOT_API_KEY"]
-    },
+      "api_key": os.environ["RIOT_API_KEY"],
+      "request_error_handling": {
+        "404": {
+          "strategy": "throw"
+        },
+        "429": {
+          "service": {
+            "strategy": "exponential_backoff",
+            "initial_backoff": 1.0,
+            "backoff_factor": 2.0,
+            "max_attempts": 4
+          },
+          "method": {
+            "strategy": "retry_from_headers",
+            "max_attempts": 5
+          },
+          "application": {
+            "strategy": "retry_from_headers",
+            "max_attempts": 5
+          }
+        },
+        "500": {
+          "strategy": "exponential_backoff",
+          "initial_backoff": 1.0,
+          "backoff_factor": 2.0,
+          "max_attempts": 4
+        },
+        "503": {
+          "strategy": "exponential_backoff",
+          "initial_backoff": 1.0,
+          "backoff_factor": 2.0,
+          "max_attempts": 4
+        },
+        "timeout": {
+          "strategy": "throw"
+        }
+      }
+    }
   },
 
   "logging": {

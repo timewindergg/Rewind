@@ -183,68 +183,68 @@ def aggregate_user_matches(matchlist, summoner_id, region):
             lawn_data[date]['losses'] += 1
 
         
-        # 
-        # Matches
-        #
-        killing_spree = 0
-        if user.stats.penta_kills > 0:
-            killing_spree = 5
-        elif user.stats.quadra_kills > 0:
-            killing_spree = 4
-        elif user.stats.triple_kills > 0:
-            killing_spree = 3
-        elif user.stats.double_kills > 0:
-            killing_spree = 2
-        elif user.stats.kills > 0:
-            killing_spree = 1
-        try:
-            m = Matches.objects.create(
-                user_id=summoner_id,
-                match_id=match.id,
-                region=match.region.value,
-                season_id=season_id,
-                queue_id=cass.data.QUEUE_IDS[match.queue],
-                timestamp=match.creation.timestamp,
-                duration=match.duration.total_seconds(),
-                champ_id=user.champion.id,
-                participant_id=user.id,
-                item0=items[0],
-                item1=items[1],
-                item2=items[2],
-                item3=items[3],
-                item4=items[4],
-                item5=items[5],
-                item6=items[6],
-                spell0=user.summoner_spell_d.id,
-                spell1=user.summoner_spell_f.id,
-                deaths=user.stats.deaths,
-                assists=user.stats.assists,
-                cs=user.stats.total_minions_killed,
-                gold=user.stats.gold_earned,
-                level=user.stats.level,
-                wards_placed=wards_placed,
-                wards_killed=wards_killed,
-                vision_wards_bought=user.stats.vision_wards_bought_in_game,
-                game_type=match.mode.value,
-                lane=lane,
-                role=role,
-                team=user.side.value,
-                winner=100 if match.blue_team.win else 200,
-                won=user.stats.win,
-                is_remake=match.is_remake,
-                killing_spree=killing_spree,
-                red_team = match.red_team.to_json(),
-                blue_team = match.blue_team.to_json()
-            )
-        except:
-            log.warn("Duplicate match %d" % match_id)
-            return
-
-        
-        #
-        # UserChampionStats
-        #
         with transaction.atomic():
+            # 
+            # Matches
+            #
+            killing_spree = 0
+            if user.stats.penta_kills > 0:
+                killing_spree = 5
+            elif user.stats.quadra_kills > 0:
+                killing_spree = 4
+            elif user.stats.triple_kills > 0:
+                killing_spree = 3
+            elif user.stats.double_kills > 0:
+                killing_spree = 2
+            elif user.stats.kills > 0:
+                killing_spree = 1
+            try:
+                m = Matches.objects.create(
+                    user_id=summoner_id,
+                    match_id=match.id,
+                    region=match.region.value,
+                    season_id=season_id,
+                    queue_id=cass.data.QUEUE_IDS[match.queue],
+                    timestamp=match.creation.timestamp,
+                    duration=match.duration.total_seconds(),
+                    champ_id=user.champion.id,
+                    participant_id=user.id,
+                    item0=items[0],
+                    item1=items[1],
+                    item2=items[2],
+                    item3=items[3],
+                    item4=items[4],
+                    item5=items[5],
+                    item6=items[6],
+                    spell0=user.summoner_spell_d.id,
+                    spell1=user.summoner_spell_f.id,
+                    deaths=user.stats.deaths,
+                    assists=user.stats.assists,
+                    cs=user.stats.total_minions_killed,
+                    gold=user.stats.gold_earned,
+                    level=user.stats.level,
+                    wards_placed=wards_placed,
+                    wards_killed=wards_killed,
+                    vision_wards_bought=user.stats.vision_wards_bought_in_game,
+                    game_type=match.mode.value,
+                    lane=lane,
+                    role=role,
+                    team=user.side.value,
+                    winner=100 if match.blue_team.win else 200,
+                    won=user.stats.win,
+                    is_remake=match.is_remake,
+                    killing_spree=killing_spree,
+                    red_team = match.red_team.to_json(),
+                    blue_team = match.blue_team.to_json()
+                )
+            except:
+                log.warn("Duplicate match %d" % match_id)
+                return
+
+            
+            #
+            # UserChampionStats
+            #
             ucs, created = UserChampionStats.objects.select_for_update().get_or_create(user_id=summoner_id, region=region, season_id=season_id, champ_id=user.champion.id, lane=lane)
             if user.stats.win:
                 ucs.wins += 1
@@ -458,17 +458,16 @@ def update_spells(summoner_id, region, data):
     for champ_id, lanes in data.items():
         for lane, sum_strings in lanes.items():
             for sum_string, occurence in sum_strings.items():
-                with transaction.atomic():
-                    ucs, created = UserChampionSummoners.objects.select_for_update().get_or_create(
-                        user_id=summoner_id, 
-                        region=region, 
-                        lane=lane, 
-                        champ_id=champ_id, 
-                        summoner_set=sum_string,
-                        defaults={'occurence': 0}
-                    )
-                    ucs.occurence = F('occurence') + occurence
-                    ucs.save()
+                ucs, created = UserChampionSummoners.objects.get_or_create(
+                    user_id=summoner_id, 
+                    region=region, 
+                    lane=lane, 
+                    champ_id=champ_id, 
+                    summoner_set=sum_string,
+                    defaults={'occurence': 0}
+                )
+                ucs.occurence = F('occurence') + occurence
+                ucs.save()
     print("us:", time.time() *1000 - t)
 
 @shared_task()
@@ -477,17 +476,16 @@ def update_runes(summoner_id, region, data):
     for champ_id, lanes in data.items():
         for lane, rune_strings in lanes.items():
             for rune_string, occurence in rune_strings.items():
-                with transaction.atomic():
-                    ucr, created = UserChampionRunes.objects.select_for_update().get_or_create(
-                        user_id=summoner_id, 
-                        region=region, 
-                        lane=lane, 
-                        champ_id=champ_id, 
-                        rune_set=rune_string,
-                        defaults={'occurence': 0}
-                    )
-                    ucr.occurence = F('occurence') + occurence
-                    ucr.save()
+                ucr, created = UserChampionRunes.objects.get_or_create(
+                    user_id=summoner_id, 
+                    region=region, 
+                    lane=lane, 
+                    champ_id=champ_id, 
+                    rune_set=rune_string,
+                    defaults={'occurence': 0}
+                )
+                ucr.occurence = F('occurence') + occurence
+                ucr.save()
     print("ur:", time.time() *1000 - t)
 
 @shared_task()
@@ -518,34 +516,32 @@ def update_userchampionversus(summoner_id, region, data):
 def update_matchlawn(summoner_id, region, data):
     t = time.time() * 1000
     for date, stats in data.items():
-        with transaction.atomic():
-            lawn, created = MatchLawn.objects.select_for_update().get_or_create(
-                user_id=summoner_id,
-                region=region, 
-                date=date, 
-                defaults={
-                    'wins': 0,
-                    'losses': 0
-                }
-            )
-            lawn.wins = F('wins') + stats['wins']
-            lawn.losses = F('losses') + stats['losses']
-            lawn.save()
+        lawn, created = MatchLawn.objects.get_or_create(
+            user_id=summoner_id,
+            region=region, 
+            date=date, 
+            defaults={
+                'wins': 0,
+                'losses': 0
+            }
+        )
+        lawn.wins = F('wins') + stats['wins']
+        lawn.losses = F('losses') + stats['losses']
+        lawn.save()
     print("ml:", time.time() *1000 - t)
 
 @shared_task()
 def update_profile(summoner_id, region, data):
     t = time.time() * 1000
-    with transaction.atomic():
-        try:
-            profile = ProfileStats.objects.select_for_update().get(user_id=summoner_id, region=region)
-            profile.wins = F('wins') + data['wins']
-            profile.losses = F('losses') + data['losses']
-            profile.time_played = F('time_played') + data['time_played']
-            if profile.last_match_updated < data['last_match_updated']:
-                profile.last_match_updated = data['last_match_updated']
-            profile.save()
-        except Exception as e:
-            log.error("Summoner not created in database")
-            raise e
+    try:
+        profile = ProfileStats.objects.get(user_id=summoner_id, region=region)
+        profile.wins = F('wins') + data['wins']
+        profile.losses = F('losses') + data['losses']
+        profile.time_played = F('time_played') + data['time_played']
+        if profile.last_match_updated < data['last_match_updated']:
+            profile.last_match_updated = data['last_match_updated']
+        profile.save()
+    except Exception as e:
+        log.error("Summoner not created in database")
+        raise e
     print("p:", time.time() *1000 - t)
