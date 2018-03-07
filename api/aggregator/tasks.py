@@ -117,6 +117,7 @@ def aggregate_user_matches(matchlist, summoner_id, region):
     global_items_data = {}
 
     for match in matchlist:
+        now = time.time()
         #
         # Common data
         #
@@ -155,6 +156,8 @@ def aggregate_user_matches(matchlist, summoner_id, region):
 
         items = [item.id if item else 0 for item in user.stats.items]
 
+        print(time.time() - now)
+        now = time.time()
 
         #
         # ProfileStats
@@ -166,7 +169,8 @@ def aggregate_user_matches(matchlist, summoner_id, region):
             profile_data['wins'] += 1
         else:
             profile_data['losses'] += 1
-
+        print(time.time() - now)
+        now = time.time()
 
         #
         # MatchLawn
@@ -182,7 +186,8 @@ def aggregate_user_matches(matchlist, summoner_id, region):
         else:
             lawn_data[date]['losses'] += 1
 
-        
+        print(time.time() - now)
+        now = time.time()
         # 
         # Matches
         #
@@ -239,7 +244,8 @@ def aggregate_user_matches(matchlist, summoner_id, region):
         except:
             log.warn("Duplicate match %d" % match_id)
             return
-
+        print(time.time() - now)
+        now = time.time()
         
         #
         # UserChampionStats
@@ -309,7 +315,8 @@ def aggregate_user_matches(matchlist, summoner_id, region):
                     ucs.dmg_taken_diff30 = (ucs.dmg_taken_diff30 * (ucs.total_games - 1) + user.timeline.damage_taken_diff_per_min_deltas['20-30']) / ucs.total_games
             ucs.save()
                
-
+        print(time.time() - now)
+        now = time.time()
         #
         # UserChampionVersusStats
         #
@@ -333,7 +340,8 @@ def aggregate_user_matches(matchlist, summoner_id, region):
                 versus_data[user.champion.id][enemy.champion.id]['losses'] += 1
             versus_data[user.champion.id][enemy.champion.id]['total_games'] += 1
 
-
+        print(time.time() - now)
+        now = time.time()
         #
         # Runes
         #
@@ -350,7 +358,8 @@ def aggregate_user_matches(matchlist, summoner_id, region):
         else:
             rune_data[user.champion.id][lane][rune_string] = 1
 
-
+        print(time.time() - now)
+        now = time.time()
         #
         # Summoner Spells
         #
@@ -367,7 +376,8 @@ def aggregate_user_matches(matchlist, summoner_id, region):
         else:
             spell_data[user.champion.id][lane][sum_string] = 1
 
-
+        print(time.time() - now)
+        now = time.time()
         #
         # Items
         #
@@ -383,7 +393,8 @@ def aggregate_user_matches(matchlist, summoner_id, region):
             else:
                 items_data[user.champion.id][lane][item] = 1
 
-
+        print(time.time() - now)
+        now = time.time()
         #
         # Global
         #
@@ -399,14 +410,20 @@ def aggregate_user_matches(matchlist, summoner_id, region):
                     else:
                         global_items_data[participant.champion.id][item] = 1
 
-    
-    update_profile.delay(summoner_id, region, profile_data)
+        print(time.time() - now)
+        now = time.time()
+
+
+
+    now = time.time()
+    update_profile(summoner_id, region, profile_data)
     update_matchlawn.delay(summoner_id, region, lawn_data)
     update_userchampionversus.delay(summoner_id, region, versus_data)
     update_runes.delay(summoner_id, region, rune_data)
     update_spells.delay(summoner_id, region, spell_data)
     update_items.delay(summoner_id, region, items_data)
     update_global_items.delay(global_items_data)
+    print(time.time() - now)
 
 
 @shared_task()
