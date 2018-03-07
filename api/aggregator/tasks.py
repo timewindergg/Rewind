@@ -280,11 +280,11 @@ def aggregate_user_matches(matchlist, summoner_id, region):
             if match.duration.seconds <= 20 * 60:
                 ucs.total_games20 = F('total_games20') + 1
             elif match.duration.seconds <= 30 * 60:
-                ucs.total_games30 = F('total_games_30') + 1
+                ucs.total_games30 = F('total_games30') + 1
             elif match.duration.seconds <= 40 * 60:
-                ucs.total_games40 = F('total_games_40') + 1
+                ucs.total_games40 = F('total_games40') + 1
             elif match.duration.seconds > 40 * 60:
-                ucs.total_games40p = F('total_games_40p') + 1
+                ucs.total_games40p = F('total_games40p') + 1
             has_diffs = hasattr(user.timeline, 'cs_diff_per_min_deltas')
             if match.duration.seconds > 10 * 60:
                 ucs.gold10 = (F('gold10') * (F('total_games') - 1) + user.timeline.gold_per_min_deltas['0-10']) / F('total_games')
