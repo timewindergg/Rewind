@@ -128,7 +128,7 @@ def aggregate_user_matches(matchlist, summoner_id, region):
             log.warn("Error checking is_ranked in aggregate_user_match")
             is_ranked = False
 
-        participants = match.red_team.participants + match.blue_team.participants
+        participants = match.participants
         for participant in participants:
             if participant.summoner.id == summoner_id:
                 user = participant

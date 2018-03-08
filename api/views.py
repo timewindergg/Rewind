@@ -550,7 +550,7 @@ def get_current_match(request):
     blue_team_champs = [p.champion.id for p in blue_participants]
     red_participants = m.teams[1].participants
     red_team_champs = [p.champion.id for p in red_participants]
-    participants = blue_participants + red_participants
+    participants = m.participants
 
     # champion winrates
     wr_matrix = {}
