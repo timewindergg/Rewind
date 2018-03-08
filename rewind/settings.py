@@ -63,10 +63,6 @@ LOGGING = {
     }
 }
 
-CRONJOBS = [
-    ('0 6 * * *', 'api.cron.update_static')
-]
-
 # Application definition
 
 CELERY_BROKER_URL = os.environ.get("REDIS_URL")
@@ -82,7 +78,6 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django_crontab',
     #'django.contrib.postgres',
     #'psqlextra',
     'api',
