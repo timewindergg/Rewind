@@ -79,8 +79,8 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.postgres',
-    'psqlextra',
+    #'django.contrib.postgres',
+    #'psqlextra',
     'api',
 )
 
@@ -106,8 +106,8 @@ DATABASES = {}
 
 import dj_database_url
 DATABASES['default'] =  dj_database_url.config(conn_max_age=60,
-                                               default='postgres://localhost:5432/timewinder',
-                                               engine='psqlextra.backend')
+                                               default='postgres://localhost:5432/timewinder')
+                                               #engine='psqlextra.backend')
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/
