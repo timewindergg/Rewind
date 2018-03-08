@@ -546,8 +546,8 @@ def create_matches(summoner_id, region, data):
 @shared_task()
 def update_global_items(data):
     t = time.time() * 1000
-    for champ_id, items in data.items():
-        with transaction.atomic():
+    with transaction.atomic():
+        for champ_id, items in data.items():
             champ_item, created = ChampionItems.objects.select_for_update().get_or_create(
                 champ_id=champ_id
             )
@@ -566,9 +566,9 @@ def update_global_items(data):
 @shared_task()
 def update_items(summoner_id, region, data):
     t = time.time() * 1000
-    for champ_id, lanes in data.items():
-        for lane, items in lanes.items():
-            with transaction.atomic():
+    with transaction.atomic():
+        for champ_id, lanes in data.items():
+            for lane, items in lanes.items():
                 uci, created = UserChampionItems.objects.select_for_update().get_or_create(
                     user_id=summoner_id, 
                     region=region,
@@ -590,44 +590,46 @@ def update_items(summoner_id, region, data):
 @shared_task()
 def update_spells(summoner_id, region, data):
     t = time.time() * 1000
-    for champ_id, lanes in data.items():
-        for lane, sum_strings in lanes.items():
-            for sum_string, occurence in sum_strings.items():
-                ucs, created = UserChampionSummoners.objects.get_or_create(
-                    user_id=summoner_id, 
-                    region=region, 
-                    lane=lane, 
-                    champ_id=champ_id, 
-                    summoner_set=sum_string,
-                    defaults={'occurence': 0}
-                )
-                ucs.occurence = F('occurence') + occurence
-                ucs.save()
+    with transaction.atomic()
+        for champ_id, lanes in data.items():
+            for lane, sum_strings in lanes.items():
+                for sum_string, occurence in sum_strings.items():
+                    ucs, created = UserChampionSummoners.objects.get_or_create(
+                        user_id=summoner_id, 
+                        region=region, 
+                        lane=lane, 
+                        champ_id=champ_id, 
+                        summoner_set=sum_string,
+                        defaults={'occurence': 0}
+                    )
+                    ucs.occurence = F('occurence') + occurence
+                    ucs.save()
     print("us:", time.time() *1000 - t)
 
 @shared_task()
 def update_runes(summoner_id, region, data):
     t = time.time() * 1000
-    for champ_id, lanes in data.items():
-        for lane, rune_strings in lanes.items():
-            for rune_string, occurence in rune_strings.items():
-                ucr, created = UserChampionRunes.objects.get_or_create(
-                    user_id=summoner_id, 
-                    region=region, 
-                    lane=lane, 
-                    champ_id=champ_id, 
-                    rune_set=rune_string,
-                    defaults={'occurence': 0}
-                )
-                ucr.occurence = F('occurence') + occurence
-                ucr.save()
+    with transaction.atomic():
+        for champ_id, lanes in data.items():
+            for lane, rune_strings in lanes.items():
+                for rune_string, occurence in rune_strings.items():
+                    ucr, created = UserChampionRunes.objects.get_or_create(
+                        user_id=summoner_id, 
+                        region=region, 
+                        lane=lane, 
+                        champ_id=champ_id, 
+                        rune_set=rune_string,
+                        defaults={'occurence': 0}
+                    )
+                    ucr.occurence = F('occurence') + occurence
+                    ucr.save()
     print("ur:", time.time() *1000 - t)
 
 @shared_task()
 def update_userchampionversus(summoner_id, region, data):
     t = time.time() * 1000
-    for champ_id, enemies_data in data.items():
-        with transaction.atomic():
+    with transaction.atomic():
+        for champ_id, enemies_data in data.items():
             championv, created = UserChampionVersusStats.objects.select_for_update().get_or_create(
                 user_id=summoner_id, 
                 region=region, 
