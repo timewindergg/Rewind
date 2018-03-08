@@ -590,7 +590,7 @@ def update_items(summoner_id, region, data):
 @shared_task()
 def update_spells(summoner_id, region, data):
     t = time.time() * 1000
-    with transaction.atomic()
+    with transaction.atomic():
         for champ_id, lanes in data.items():
             for lane, sum_strings in lanes.items():
                 for sum_string, occurence in sum_strings.items():
