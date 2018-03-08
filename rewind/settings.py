@@ -79,7 +79,9 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'api'
+    'django.contrib.postgres',
+    'psqlextra',
+    'api',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -103,7 +105,9 @@ WSGI_APPLICATION = 'rewind.wsgi.application'
 DATABASES = {}
 
 import dj_database_url
-DATABASES['default'] =  dj_database_url.config(conn_max_age=60, default='postgres://localhost:5432/timewinder')
+DATABASES['default'] =  dj_database_url.config(conn_max_age=60,
+                                               default='postgres://localhost:5432/timewinder',
+                                               engine='psqlextra.backend')
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/

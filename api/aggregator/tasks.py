@@ -66,7 +66,7 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
         aggregate_users.retry(exc=e)
 
 
-@shared_task(retry_backoff=True, max_retries=3)
+@shared_task(retry_backoff=True, max_retries=3, rate_limit='1/s')
 def aggregate_batched_matches(batch, region, summoner_id):
     try:
         # init

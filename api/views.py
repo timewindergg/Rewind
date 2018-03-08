@@ -99,7 +99,19 @@ cass.apply_settings({
           "backoff_factor": 2.0,
           "max_attempts": 4
         },
+        "502": {
+          "strategy": "exponential_backoff",
+          "initial_backoff": 1.0,
+          "backoff_factor": 2.0,
+          "max_attempts": 4
+        },
         "503": {
+          "strategy": "exponential_backoff",
+          "initial_backoff": 1.0,
+          "backoff_factor": 2.0,
+          "max_attempts": 8
+        },
+        "504": {
           "strategy": "exponential_backoff",
           "initial_backoff": 1.0,
           "backoff_factor": 2.0,
@@ -311,6 +323,48 @@ def get_summoner(request):
     response['championStats'] = list(champ_stats.values())
 
     return JsonResponse(response)
+
+
+#
+# USER LEAGUES
+#
+@require_http_methods(["GET"])
+def get_user_leagues(request):
+    try:
+        region = request.GET['region']
+        summoners = normalize_region(request.GET['summoner_names'])
+        summoner_list = summoners.split(',')
+
+        league_list = []
+        for s in summoner_list:
+            summ = cass.get_summoner(name=s, region=region) 
+            league_list.append(cass.get_league_positions(summoner=s, region=region))
+
+        pool = Pool(10)
+        pool.map(load_league, league_list)
+        pool.close()
+        pool.join()
+
+        response = {}
+
+        for summoner_leagues in league_list:
+            response[summoner_leagues.summoner.id] = {}
+            for league in l:
+                league_response = {}
+                league_response['tier'] = league.tier.value
+                league_response['division'] = league.division.value
+                league_response['points'] = league.league_points
+                response[summoner_leagues.summoner.id][league] = league_response
+    except:
+        log.warn('failed to get user leagues', stack_info=True)
+        return HttpResponse(status=500)
+
+    return JsonResponse(response)
+    
+
+def load_league(league):
+    league.load()
+
 
 #
 # MATCH HISTORY

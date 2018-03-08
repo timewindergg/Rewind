@@ -1,11 +1,12 @@
 from django.db import models
+from psqlextra.models import PostgresModel
 
-class Items(models.Model):
+class Items(PostgresModel):
     item_id = models.IntegerField(primary_key=True)
     item_type = models.IntegerField()
 
 
-class ChampionStats(models.Model):
+class ChampionStats(PostgresModel):
     champ_id = models.IntegerField()
     total_games = models.IntegerField(default=0)
     role = models.CharField(max_length=50)
@@ -18,7 +19,7 @@ class ChampionStats(models.Model):
         unique_together = (("champ_id", "role"),)
 
 
-class ChampionMatchups(models.Model):
+class ChampionMatchups(PostgresModel):
     champ_id = models.IntegerField()
     enemy_champ_id = models.IntegerField()
     role = models.CharField(max_length=50)
@@ -30,7 +31,7 @@ class ChampionMatchups(models.Model):
     class Meta:
         unique_together = (("champ_id", "role", "enemy_champ_id"),)
 
-class ChampionItems(models.Model):
+class ChampionItems(PostgresModel):
     champ_id = models.IntegerField(primary_key=True)
     item_blob = models.TextField(default="{}")
 
@@ -46,7 +47,7 @@ class ChampionRunes(models.Model):
 '''
 
 
-class UserChampionItems(models.Model):
+class UserChampionItems(PostgresModel):
     user_id = models.IntegerField()
     region = models.CharField(max_length=10)
     champ_id = models.IntegerField()
@@ -57,7 +58,7 @@ class UserChampionItems(models.Model):
         unique_together = (("user_id", "region", "champ_id", "lane"),)
 
 
-class UserChampionRunes(models.Model):
+class UserChampionRunes(PostgresModel):
     user_id = models.IntegerField()
     region = models.CharField(max_length=10)
     champ_id = models.IntegerField()
@@ -69,7 +70,7 @@ class UserChampionRunes(models.Model):
         unique_together = (("user_id", "region", "champ_id", "lane", "rune_set"),)
 
 
-class UserChampionMasteries(models.Model):
+class UserChampionMasteries(PostgresModel):
     user_id = models.IntegerField()
     region = models.CharField(max_length=10)
     champ_id = models.IntegerField()
@@ -83,7 +84,7 @@ class UserChampionMasteries(models.Model):
         unique_together = (("user_id", "region", "champ_id"),)
 
 
-class UserChampionSummoners(models.Model):
+class UserChampionSummoners(PostgresModel):
     user_id = models.IntegerField()
     region = models.CharField(max_length=10)
     champ_id = models.IntegerField()
@@ -95,7 +96,7 @@ class UserChampionSummoners(models.Model):
         unique_together = (("user_id", "region", "champ_id", "lane", "summoner_set"),)
 
 
-class UserChampionVersusStats(models.Model):
+class UserChampionVersusStats(PostgresModel):
     user_id = models.IntegerField()
     region = models.CharField(max_length=10)
     champ_id = models.IntegerField()
@@ -104,7 +105,7 @@ class UserChampionVersusStats(models.Model):
     class Meta:
         unique_together = (("user_id", "region", "champ_id"),)
 
-class UserChampionStats(models.Model):
+class UserChampionStats(PostgresModel):
     user_id = models.IntegerField()
     region = models.CharField(max_length=10)
     season_id = models.IntegerField()
@@ -158,7 +159,7 @@ class UserChampionStats(models.Model):
         unique_together = (("user_id", "region", "season_id", "champ_id", "lane"),)
 
 
-class UserLeagues(models.Model):
+class UserLeagues(PostgresModel):
     user_id = models.IntegerField()
     region = models.CharField(max_length=10)
     queue = models.CharField(max_length=30)
@@ -170,7 +171,7 @@ class UserLeagues(models.Model):
         unique_together = (("user_id", "region", "queue"),)
 
 
-class ProfileStats(models.Model):
+class ProfileStats(PostgresModel):
     user_id = models.IntegerField()
     region = models.CharField(max_length=10)
     name = models.CharField(max_length=16)
@@ -188,12 +189,12 @@ class ProfileStats(models.Model):
         unique_together = (("user_id", "region"),)
 
 
-class Accolades(models.Model):
+class Accolades(PostgresModel):
     accolade_id = models.IntegerField(primary_key=True)
     description = models.CharField(max_length=300)
 
 
-class UserAccolades(models.Model):
+class UserAccolades(PostgresModel):
     user_id = models.IntegerField()
     region = models.CharField(max_length=10)
     accolade_id = models.IntegerField()
@@ -203,7 +204,7 @@ class UserAccolades(models.Model):
         unique_together = (("user_id", "region", "accolade_id"),)
 
 
-class MatchLawn(models.Model):
+class MatchLawn(PostgresModel):
     user_id = models.IntegerField()
     region = models.CharField(max_length=10)
     date = models.TextField()
@@ -214,7 +215,7 @@ class MatchLawn(models.Model):
         unique_together = (("user_id", "region", "date"),)
 
 
-class Matches(models.Model):
+class Matches(PostgresModel):
     user_id = models.IntegerField()
     match_id = models.BigIntegerField()
     region = models.CharField(max_length=10)
