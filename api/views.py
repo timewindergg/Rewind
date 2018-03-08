@@ -388,7 +388,7 @@ def get_match_history(request):
     if len(matches) > 0:
         response = list(matches.values())
     else:
-        recent_matches = cass.get_match_history(summoner=summoner, region=region, begin_index=0, end_index=20, seasons=[cass.data.Season.from_id(11)])
+        recent_matches = cass.get_match_history(summoner=summoner, begin_index=0, end_index=20, seasons=[cass.data.Season.from_id(11)])
         response = []
 
 
@@ -626,7 +626,7 @@ def load_match(match):
 def get_current_match_details(summoner_name, region, champion_id):
     s = cass.get_summoner(name=summoner_name, region=region)
     if s.exists:
-        matchlist = cass.get_match_history(summoner=s, region=region, champions=[champion_id], begin_index=0, end_index=10)
+        matchlist = cass.get_match_history(summoner=s, champions=[champion_id], begin_index=0, end_index=10)
         len(matchlist) # to fill matchlist
     else:
         return HttpResponse(status=404)

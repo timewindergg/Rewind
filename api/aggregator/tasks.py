@@ -36,7 +36,7 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
             if updated or index >= max_aggregations and max_aggregations > 0:
                 break
 
-            recent_matches = cass.get_match_history(summoner=summoner, region=region, begin_index=index, end_index=index+100, seasons=[cass.data.Season.from_id(11)])
+            recent_matches = cass.get_match_history(summoner=summoner, begin_index=index, end_index=index+100, seasons=[cass.data.Season.from_id(11)])
 
             batch = []
             for match in recent_matches:
@@ -62,7 +62,7 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
 
         return f"Aggregated {summoner_id}, {region}, {count} matches"
     except Exception as e:
-        log.warn("Failed to aggregate_user", stack_info=True)
+        log.warn("Failed to aggregate_user", e, stack_info=True)
         aggregate_users.retry(exc=e)
 
 
@@ -118,40 +118,34 @@ def aggregate_user_matches(matchlist, summoner_id, region):
     champion_data = []
 
     for match in matchlist:
+        t = time.time()*1000
         #
         # Common data
         #
         try:
-            is_ranked = match.queue == cass.Queue.ranked_solo_fives or match.queue == cass.Queue.ranked_flex_fives or match.queue == cass.Queue.ranked_flex_threes
+            is_ranked = match.queue == cass.Queue.ranked_solo_fives or match.queue == cass.Queue.ranked_flex_fives
         except:
             log.warn("Error checking is_ranked in aggregate_user_match")
             is_ranked = False
 
-        participants = match.participants
+        participants = match.red_team.participants + match.blue_team.participants
         for participant in participants:
             if participant.summoner.id == summoner_id:
                 user = participant
                 break
 
-        try:
-            lane = user.lane.value
-        except:
+        if user.lane is None:
             lane = 'NONE'
+        else:
+            lane = user.lane.value
 
         if user.role is None:
             role = 'NONE'
         else:
-            try:
-                role = user.role.value
-            except:
-                role = user.role
+            role = getattr(user.role, 'value', user.role)
 
-        try:
-            wards_placed = user.stats.wards_placed
-            wards_killed = user.stats.wards_killed
-        except:
-            wards_placed = 0
-            wards_killed = 0
+        wards_placed = getattr(user.stats, 'wards_placed', 0)
+        wards_killed = getattr(user.stats, 'wards_killed', 0)
 
         season_id = cass.data.SEASON_IDS[match.season]
 
@@ -159,6 +153,8 @@ def aggregate_user_matches(matchlist, summoner_id, region):
         items = [item.id if item else 0 for item in user_items]
 
 
+        print(time.time()*1000 - t)
+        t = time.time() * 1000
         #
         # ProfileStats
         #
@@ -185,7 +181,8 @@ def aggregate_user_matches(matchlist, summoner_id, region):
         else:
             lawn_data[date]['losses'] += 1
 
-        
+        print(time.time()*1000 - t)
+        t = time.time() * 1000
         # 
         # Matches
         #
@@ -237,7 +234,8 @@ def aggregate_user_matches(matchlist, summoner_id, region):
         match_data['red_team'] = match.red_team.to_json()
         match_data['blue_team'] = match.blue_team.to_json()
         matches_data[match.id] = match_data
-
+        print("m4",time.time()*1000 - t)
+        t = time.time() * 1000
             
         #
         # UserChampionStats
@@ -313,7 +311,8 @@ def aggregate_user_matches(matchlist, summoner_id, region):
                 champ_stats['xdpmd30'] = user.timeline.xp_diff_per_min_deltas['20-30']
                 champ_stats['ddpmd30'] = user.timeline.damage_taken_diff_per_min_deltas['20-30']
         champion_data.append(champ_stats)       
-
+        print("ucs:",time.time()*1000 - t)
+        t = time.time() * 1000
 
         #
         # UserChampionVersusStats
@@ -338,7 +337,8 @@ def aggregate_user_matches(matchlist, summoner_id, region):
                 versus_data[user.champion.id][enemy.champion.id]['losses'] += 1
             versus_data[user.champion.id][enemy.champion.id]['total_games'] += 1
 
-
+        print("ucv:",time.time()*1000 - t)
+        t = time.time() * 1000
         #
         # Runes
         #
