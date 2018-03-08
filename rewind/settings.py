@@ -63,6 +63,9 @@ LOGGING = {
     }
 }
 
+CRONJOBS = [
+    ('0 6 * * *', 'api.cron.update_static')
+]
 
 # Application definition
 
@@ -79,6 +82,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_crontab',
     #'django.contrib.postgres',
     #'psqlextra',
     'api',
@@ -139,8 +143,3 @@ STATICFILES_DIRS = [
     os.path.join(PROJECT_ROOT, "static/masteries"),
     os.path.join(PROJECT_ROOT, "static/tiers")
 ]
-
-# Aggregation settings
-AGGREGATION_BATCH_SIZE = os.environ['AGGREGATION_BATCH_SIZE']
-AGGREGATION_SIZE = os.environ['AGGREGATION_SIZE']
-

@@ -12,6 +12,7 @@ import time
 import os
 
 from api.models import ProfileStats, Matches, MatchLawn, UserChampionStats, ChampionStats, ChampionItems, UserChampionVersusStats, UserChampionItems, UserChampionRunes, UserChampionSummoners
+from api import consts as Consts
 
 import logging
 log = logging.getLogger(__name__)
@@ -46,7 +47,7 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
 
                 batch.append(match.id)
 
-                if len(batch) == 25:
+                if len(batch) == Consts.AGGREGATION_BATCH_SIZE:
                     
                     aggregate_batched_matches.delay(batch, region, summoner_id)
                     batch = []

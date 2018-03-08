@@ -6,7 +6,6 @@ from django.views.decorators.cache import cache_page
 from django.forms.models import model_to_dict
 from django.db import transaction
 from django.db.models import Sum, Q
-from django.conf import settings
 
 import cassiopeia as cass
 from cassiopeia import Champion
@@ -36,30 +35,30 @@ cass.apply_settings({
   "pipeline": {
     "Cache": {
       "expirations": {
-        "ChampionStatusData": datetime.timedelta(hours=6),
-        "ChampionStatusListData": datetime.timedelta(hours=6),
+        "ChampionStatusData": 0,
+        "ChampionStatusListData": 0,
         "Realms": datetime.timedelta(hours=6),
         "Versions": datetime.timedelta(hours=6),
-        "Champion": datetime.timedelta(days=20),
-        "Rune": datetime.timedelta(days=20),
-        "Item": datetime.timedelta(days=20),
-        "SummonerSpell": datetime.timedelta(days=20),
-        "Map": datetime.timedelta(days=20),
-        "ProfileIcon": datetime.timedelta(days=20),
+        "Champion": 0,
+        "Rune": 0,
+        "Item": 0,
+        "SummonerSpell": 0,
+        "Map": 0,
+        "ProfileIcon": 0,
         "Locales": datetime.timedelta(days=20),
         "LanguageStrings": datetime.timedelta(days=20),
-        "SummonerSpells": datetime.timedelta(days=20),
-        "Items": datetime.timedelta(days=20),
-        "Champions": datetime.timedelta(days=20),
-        "Runes": datetime.timedelta(days=20),
-        "Maps": datetime.timedelta(days=20),
-        "ProfileIcons": datetime.timedelta(days=20),
-        "ChampionMastery": datetime.timedelta(days=7),
-        "ChampionMasteries": datetime.timedelta(days=7),
-        "LeagueEntries": datetime.timedelta(hours=6),
-        "League": datetime.timedelta(hours=6),
-        "ChallengerLeague": datetime.timedelta(hours=6),
-        "MasterLeague": datetime.timedelta(hours=6),
+        "SummonerSpells": 0,
+        "Items": 0,
+        "Champions": 0,
+        "Runes": 0,
+        "Maps": 0,
+        "ProfileIcons": 0,
+        "ChampionMastery": 0,
+        "ChampionMasteries": 0,
+        "LeagueEntries": 0,
+        "League": 0,
+        "ChallengerLeague": 0,
+        "MasterLeague": 0,
         "Match": 0,
         "Timeline": 0,
         "Summoner": 0,
@@ -143,13 +142,11 @@ def normalize_region(region):
     except:
         return region
 
-def get_champion_id(name):
-    return int(Consts.CHAMPION_IDS[name.lower()])
 
 #
 # STATIC DATA
 #
-@cache_page(60 * 60 * 24 * 7)
+@cache_page(60 * 60 * 12)
 @require_http_methods(["GET"])
 def get_static_data(request, region):
     region = normalize_region(region)
@@ -229,7 +226,8 @@ def update_summoner_helper(s, region):
 
     with transaction.atomic():
         summoner, created = ProfileStats.objects.select_for_update().get_or_create(user_id=s.id, region=region)
-        if created or summoner.last_updated < time.time() - Consts.SECONDS_BETWEEN_UPDATES:
+        last_updated = summoner.last_updated
+        if created or last_updated < time.time() - Consts.SECONDS_BETWEEN_UPDATES:
             update = True
             summoner.last_updated = round(time.time())
             summoner.name = s.name
@@ -237,6 +235,10 @@ def update_summoner_helper(s, region):
             summoner.level = s.level
             summoner.save()
 
+        transaction.on_commit(lambda: aggregate_users.delay(summoner.user_id, region, Consts.AGGREGATION_SIZE))
+
+    with transaction.atomic():
+        if update:
             leagues = cass.get_league_positions(summoner=s, region=region)
             for league in leagues:
                 user_league, created = UserLeagues.objects.select_for_update().get_or_create(user_id=s.id, region=region, queue=league.queue.value)
@@ -245,17 +247,16 @@ def update_summoner_helper(s, region):
                 user_league.points = league.league_points
                 user_league.save()
 
-            cmasteries = cass.get_champion_masteries(summoner=s, region=region)
-            for cmastery in cmasteries:
-                user_champion, created = UserChampionMasteries.objects.select_for_update().get_or_create(user_id=s.id, region=region, champ_id=cmastery.champion.id)
-                user_champion.level = cmastery.level
-                user_champion.total_points = cmastery.points
-                user_champion.points_since_last = cmastery.points_since_last_level
-                user_champion.points_to_next = cmastery.points_until_next_level
-                user_champion.chest_granted = cmastery.chest_granted
-                user_champion.save()
-
-        transaction.on_commit(lambda: aggregate_users.delay(summoner.user_id, region, settings.AGGREGATION_SIZE))
+            if last_updated < time.time() - Consts.SECONDS_BETWEEN_CHAMPION_MASTERY_UPDATES:
+                cmasteries = cass.get_champion_masteries(summoner=s, region=region)
+                for cmastery in cmasteries:
+                    user_champion, created = UserChampionMasteries.objects.select_for_update().get_or_create(user_id=s.id, region=region, champ_id=cmastery.champion.id)
+                    user_champion.level = cmastery.level
+                    user_champion.total_points = cmastery.points
+                    user_champion.points_since_last = cmastery.points_since_last_level
+                    user_champion.points_to_next = cmastery.points_until_next_level
+                    user_champion.chest_granted = cmastery.chest_granted
+                    user_champion.save()
 
 
 @csrf_exempt
@@ -277,10 +278,14 @@ def update_summoner(request):
 #
 @require_http_methods(["GET"])
 def get_summoner(request):
-    summoner_name = request.GET['summoner_name']
     region = normalize_region(request.GET['region'])
+    try:
+        summoner_name = request.GET['summoner_name']
+        s = cass.get_summoner(name=summoner_name, region=region)
+    except:
+        summoner_id = request.GET['summoner_id']
+        s = cass.get_summoner(id=summoner_id, region=region)
 
-    s = cass.get_summoner(name=summoner_name, region=region)
     if not s.exists:
         return HttpResponse('Summoner does not exist', status=404)
 
@@ -331,32 +336,37 @@ def get_summoner(request):
 @require_http_methods(["GET"])
 def get_user_leagues(request):
     try:
-        region = request.GET['region']
-        summoners = normalize_region(request.GET['summoner_names'])
+        region = normalize_region(request.GET['region'])
+        summoners = request.GET['summoner_ids']
         summoner_list = summoners.split(',')
+        summoner_list = [int(s) for s in summoner_list]
 
         league_list = []
         for s in summoner_list:
-            summ = cass.get_summoner(name=s, region=region) 
+            summ = cass.get_summoner(id=s, region=region) 
             league_list.append(cass.get_league_positions(summoner=s, region=region))
 
-        pool = Pool(10)
-        pool.map(load_league, league_list)
-        pool.close()
-        pool.join()
+        try:
+            pool = Pool(10)
+            pool.map(load_league, league_list)
+            pool.close()
+            pool.join()
+        except:
+            pool.close()
+            log.warn('failed to load league list')
 
         response = {}
 
-        for summoner_leagues in league_list:
-            response[summoner_leagues.summoner.id] = {}
+        for i, summoner_leagues in enumerate(league_list):
+            response[summoner_list[i]] = {}
             for league in l:
                 league_response = {}
                 league_response['tier'] = league.tier.value
                 league_response['division'] = league.division.value
                 league_response['points'] = league.league_points
-                response[summoner_leagues.summoner.id][league] = league_response
-    except:
-        log.warn('failed to get user leagues', stack_info=True)
+                response[summoner_list[i]][league] = league_response
+    except Exception as e:
+        log.warn('failed to get user leagues', e, stack_info=True)
         return HttpResponse(status=500)
 
     return JsonResponse(response)
@@ -371,37 +381,32 @@ def load_league(league):
 #
 @require_http_methods(["GET"])
 def get_match_history(request):
-    summoner_name = request.GET['summoner_name']
     region = normalize_region(request.GET['region'])
     offset = int(request.GET['offset'])
     size = int(request.GET['size'])
+    try:
+        summoner_name = request.GET['summoner_name']
+        s = cass.get_summoner(name=summoner_name, region=region)
+    except:
+        summoner_id = request.GET['summoner_id']
+        s = cass.get_summoner(id=summoner_id, region=region)
 
-    summoner = cass.get_summoner(name=summoner_name, region=region)
-    if not summoner.exists:
+    if not s.exists:
         return HttpResponse('Summoner does not exist', status=404)
 
     try:
-        matches = Matches.objects.filter(user_id=summoner.id, region=region).order_by('-timestamp')[offset:size]
+        matches = Matches.objects.filter(user_id=s.id, region=region).order_by('-timestamp')[offset:size]
     except:
         return HttpResponse(status=404)
 
-    if len(matches) > 0:
-        response = list(matches.values())
-    else:
-        recent_matches = cass.get_match_history(summoner=summoner, begin_index=0, end_index=20, seasons=[cass.data.Season.from_id(11)])
-        response = []
-
+    response = list(matches.values())
 
     return JsonResponse(response, safe=False)
 
 #
 # USER CHAMPION STATS
 #
-def get_user_champion_stats(summoner_name, region, champion_id):
-    summoner = cass.get_summoner(name=summoner_name, region=region)
-    if not summoner.exists:
-        return HttpResponse('Summoner does not exist', status=404)
-
+def get_user_champion_stats(summoner, region, champion_id):
     response = {}
 
     try:
@@ -496,51 +501,56 @@ def get_user_champion_stats(summoner_name, region, champion_id):
     return JsonResponse(response)
 
 
-@require_http_methods
+@require_http_methods(["GET"])
 def get_user_champion_stats_by_id(request):
-    summoner_name = request.GET['summoner_name']
     region = normalize_region(request.GET['region'])
     champion_id = int(request.GET['champion_id'])
+    try:
+        summoner_name = request.GET['summoner_name']
+        s = cass.get_summoner(name=summoner_name, region=region)
+    except:
+        summoner_id = request.GET['summoner_id']
+        s = cass.get_summoner(id=summoner_id, region=region)
 
-    return get_user_champion_stats(summoner_name, region, champion_id)
+    if not s.exists:
+        return HttpResponse('Summoner does not exist', status=404)
 
+    return get_user_champion_stats(s, region, champion_id)
 
-@require_http_methods(["GET"])
-def get_user_champion_stats_by_name(request):
-    summoner_name = request.GET['summoner_name']
-    region = normalize_region(request.GET['region'])
-    champion_id = get_champion_id(request.GET['champion_name'])
-
-    return get_user_champion_stats(summoner_name, region, champion_id)
 
 #
 # CURRENT MATCH
 #
 @require_http_methods(["GET"])
 def get_current_match(request):
-    summoner_name = request.GET['summoner_name']
     region = normalize_region(request.GET['region'])
+    try:
+        summoner_name = request.GET['summoner_name']
+        s = cass.get_summoner(name=summoner_name, region=region)
+    except:
+        summoner_id = request.GET['summoner_id']
+        s = cass.get_summoner(id=summoner_id, region=region)
 
-    s = cass.get_summoner(name=summoner_name, region=region)
     if not s.exists:
-        return HttpResponse(status=404)
+        return HttpResponse("Summoner does not exist", status=404)
 
     try:
         m = cass.get_current_match(summoner=s, region=region)
         if not m.exists:
-            return HttpResponse(status=404)
+            return HttpResponse("Match does not exist", status=404)
     except:
-        return HttpResponse(status=404)
+        return HttpResponse("Match does not exist", status=404)
 
 
     response = {}
     winrates = {}
     skill_orders_response = {}
 
-    participants = m.teams[0].participants
-    blue_team_champs = [p.champion.id for p in participants]
-    participants = m.teams[1].participants
-    red_team_champs = [p.champion.id for p in participants]
+    blue_participants = m.teams[0].participants
+    blue_team_champs = [p.champion.id for p in blue_participants]
+    red_participants = m.teams[1].participants
+    red_team_champs = [p.champion.id for p in red_participants]
+    participants = blue_participants + red_participants
 
     # champion winrates
     wr_matrix = {}
@@ -563,7 +573,6 @@ def get_current_match(request):
                 
     red_team = []
     blue_team = []
-    participants = m.participants
     for participant in participants:
         p = {}
         p['id'] = participant.summoner.id
@@ -620,21 +629,29 @@ def load_match(match):
     except Exception as e:
         log.warn("Failed to load match", e, stack_info=True)
 
+
+def load_cass_obj(obj):
+    try:
+        obj.load()
+    except Exception as e:
+        log.warn("Failed to load cass obj", e, stack_info=True)
+
+
 #
 # CURRENT_MATCH_DETAILS
 #
-def get_current_match_details(summoner_name, region, champion_id):
-    s = cass.get_summoner(name=summoner_name, region=region)
-    if s.exists:
-        matchlist = cass.get_match_history(summoner=s, champions=[champion_id], begin_index=0, end_index=10)
-        len(matchlist) # to fill matchlist
-    else:
-        return HttpResponse(status=404)
+def get_current_match_details(s, region, champion_id):
+    matchlist = cass.get_match_history(summoner=s, champions=[champion_id], begin_index=0, end_index=10)
+    len(matchlist) # to fill matchlist
 
-    pool = Pool(10)
-    pool.map(load_match, matchlist)
-    pool.close()
-    pool.join()
+    try:
+        pool = Pool(10)
+        pool.map(load_match, matchlist)
+        pool.close()
+        pool.join()
+    except:
+        pool.close()
+        return HttpResponse(status=500)
 
     response = {}
 
@@ -764,28 +781,21 @@ def get_current_match_details(summoner_name, region, champion_id):
     return response
 
 
-@require_http_methods(["POST"])
-def get_current_match_details_by_batch(request):
-    summoners = request.POST['summoners']
-    region = normalize_region(request.POST['region'])
-
-    response = {}
-
-    for s in summoners:
-        cid = int(s.champion_id)
-        name = s.summoner_name
-        response[name] = get_current_match_details(name, region, cid)
-
-    return JsonResponse(response)
-
-
 @require_http_methods(["GET"])
 def get_current_match_details_by_id(request):
-    summoner_name = request.GET['summoner_name']
     region = normalize_region(request.GET['region'])
     champion_id = int(request.GET['champion_id'])
+    try:
+        summoner_name = request.GET['summoner_name']
+        s = cass.get_summoner(name=summoner_name, region=region)
+    except:
+        summoner_id = request.GET['summoner_id']
+        s = cass.get_summoner(id=summoner_id, region=region)
 
-    response = get_current_match_details(summoner_name, region, champion_id)
+    if not s.exists:
+        return HttpResponse("Summoner does not exist", status=404)
+
+    response = get_current_match_details(s, region, champion_id)
 
     return JsonResponse(response)
 
@@ -799,11 +809,13 @@ def get_match_timeline(request):
 
     try:
         match = cass.get_match(id=match_id, region=region)
-        timeline = match.timeline
-        match.load()
-        timeline.load()
+        pool = Pool(2)
+        pool.map(load_cass_obj, [match, match.timeline])
+        pool.close()
+        pool.join()
     except:
-        pass
+        pool.close()
+        return HttpResponse("Match does not exist", status=404)
 
     response = {}
     response['timeline'] = ujson.loads(timeline.to_json())
