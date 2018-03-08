@@ -818,7 +818,7 @@ def get_match_timeline(request):
         return HttpResponse("Match does not exist", status=404)
 
     response = {}
-    response['timeline'] = ujson.loads(timeline.to_json())
+    response['timeline'] = ujson.loads(match.timeline.to_json())
     response['match'] = ujson.loads(match.to_json())
 
     return JsonResponse(response)
