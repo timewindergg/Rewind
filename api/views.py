@@ -761,32 +761,32 @@ def get_current_match_details(s, region, champion_id):
         pass
 
     build = {}
-
-    # get recommended build
-    champ_items = ChampionItems.objects.get(champ_id=user.champion.id)
-    items_blob = ujson.loads(champ_items.item_blob)
-
     boots = {}
     core = {}
     situational = {}
     all_items = {}
 
-    blob_items = items_blob.items()
-    for item, occurence in blob_items:
-        if int(item) in Items.boots:
-            boots[item] = occurence
-        elif int(item) in Items.full_items:
-            all_items[item] = occurence
+    # get recommended build
+    if len(matchlist) > 0:
+        champ_items = ChampionItems.objects.get(champ_id=user.champion.id)
+        items_blob = ujson.loads(champ_items.item_blob)
 
-    sorted_all = sorted(all_items, key=all_items.get, reverse=True) 
-    core_arr = sorted_all[:3]
-    situational_arr = sorted_all[3:8]
+        blob_items = items_blob.items()
+        for item, occurence in blob_items:
+            if int(item) in Items.boots:
+                boots[item] = occurence
+            elif int(item) in Items.full_items:
+                all_items[item] = occurence
 
-    for item in core_arr:
-        core[item] = all_items[item]
+        sorted_all = sorted(all_items, key=all_items.get, reverse=True) 
+        core_arr = sorted_all[:3]
+        situational_arr = sorted_all[3:8]
 
-    for item in situational_arr:
-        situational[item] = all_items[item]
+        for item in core_arr:
+            core[item] = all_items[item]
+
+        for item in situational_arr:
+            situational[item] = all_items[item]
 
     build['boots'] = boots
     build['core'] = core
