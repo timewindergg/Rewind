@@ -142,6 +142,8 @@ def normalize_region(region):
     except:
         return region
 
+def get_champion_id(name):
+    return int(Consts.CHAMPION_IDS[name.lower()])
 
 #
 # STATIC DATA
@@ -517,6 +519,22 @@ def get_user_champion_stats_by_id(request):
 
     return get_user_champion_stats(s, region, champion_id)
 
+
+@require_http_methods(["GET"])
+def get_user_champion_stats_by_name(request):
+    region = normalize_region(request.GET['region'])
+    champion_id = get_champion_id(request.GET['champion_name'])
+    try:
+        summoner_name = request.GET['summoner_name']
+        s = cass.get_summoner(name=summoner_name, region=region)
+    except:
+        summoner_id = request.GET['summoner_id']
+        s = cass.get_summoner(id=summoner_id, region=region)
+
+    if not s.exists:
+        return HttpResponse('Summoner does not exist', status=404)
+
+    return get_user_champion_stats(s, region, champion_id)
 
 #
 # CURRENT MATCH

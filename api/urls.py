@@ -9,6 +9,7 @@ urlpatterns = [
     path('get_summoner_by_id/', views.get_summoner),
     path('get_match_history/', views.get_match_history),
     path('get_user_champion_stats_by_id/', views.get_user_champion_stats_by_id),
+    path('get_user_champion_stats_by_name/', views.get_user_champion_stats_by_name),
     path('get_current_match/', views.get_current_match),
     path('get_current_match_details_by_id/', views.get_current_match_details_by_id),
     path('update_summoner/', views.update_summoner),
