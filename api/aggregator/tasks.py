@@ -538,8 +538,8 @@ def create_matches(summoner_id, region, data):
 
         Matches.objects.bulk_create(matches)
         print("m:", time.time() *1000 - t)
-    except:
-        log.warn("Could not bulk create matches", stack_info=True)
+    except Exception as e:
+        log.warn("Could not bulk create matches", e, stack_info=True)
         return
 
 
