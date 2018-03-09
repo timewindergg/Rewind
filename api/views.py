@@ -214,8 +214,7 @@ def get_static_data(request, region):
         response['champions'] = champion_response
 
     except Exception as e:
-        log.warn("failed to get static data", stack_info=True)
-        log.warn(e)
+        log.warn("failed to get static data", e, stack_info=True)
         return HttpResponse(status=500)
 
     return JsonResponse(response)
@@ -282,11 +281,11 @@ def update_summoner(request):
 def get_summoner(request):
     region = normalize_region(request.GET['region'])
     try:
-        summoner_name = request.GET['summoner_name']
-        s = cass.get_summoner(name=summoner_name, region=region)
-    except:
         summoner_id = request.GET['summoner_id']
         s = cass.get_summoner(id=summoner_id, region=region)
+    except:
+        summoner_name = request.GET['summoner_name']
+        s = cass.get_summoner(name=summoner_name, region=region)
 
     if not s.exists:
         return HttpResponse('Summoner does not exist', status=404)
@@ -387,11 +386,11 @@ def get_match_history(request):
     offset = int(request.GET['offset'])
     size = int(request.GET['size'])
     try:
-        summoner_name = request.GET['summoner_name']
-        s = cass.get_summoner(name=summoner_name, region=region)
-    except:
         summoner_id = request.GET['summoner_id']
         s = cass.get_summoner(id=summoner_id, region=region)
+    except:
+        summoner_name = request.GET['summoner_name']
+        s = cass.get_summoner(name=summoner_name, region=region)
 
     if not s.exists:
         return HttpResponse('Summoner does not exist', status=404)
@@ -508,11 +507,11 @@ def get_user_champion_stats_by_id(request):
     region = normalize_region(request.GET['region'])
     champion_id = int(request.GET['champion_id'])
     try:
-        summoner_name = request.GET['summoner_name']
-        s = cass.get_summoner(name=summoner_name, region=region)
-    except:
         summoner_id = request.GET['summoner_id']
         s = cass.get_summoner(id=summoner_id, region=region)
+    except:
+        summoner_name = request.GET['summoner_name']
+        s = cass.get_summoner(name=summoner_name, region=region)
 
     if not s.exists:
         return HttpResponse('Summoner does not exist', status=404)
@@ -525,11 +524,11 @@ def get_user_champion_stats_by_name(request):
     region = normalize_region(request.GET['region'])
     champion_id = get_champion_id(request.GET['champion_name'])
     try:
-        summoner_name = request.GET['summoner_name']
-        s = cass.get_summoner(name=summoner_name, region=region)
-    except:
         summoner_id = request.GET['summoner_id']
         s = cass.get_summoner(id=summoner_id, region=region)
+    except:
+        summoner_name = request.GET['summoner_name']
+        s = cass.get_summoner(name=summoner_name, region=region)
 
     if not s.exists:
         return HttpResponse('Summoner does not exist', status=404)
@@ -543,11 +542,11 @@ def get_user_champion_stats_by_name(request):
 def get_current_match(request):
     region = normalize_region(request.GET['region'])
     try:
-        summoner_name = request.GET['summoner_name']
-        s = cass.get_summoner(name=summoner_name, region=region)
-    except:
         summoner_id = request.GET['summoner_id']
         s = cass.get_summoner(id=summoner_id, region=region)
+    except:
+        summoner_name = request.GET['summoner_name']
+        s = cass.get_summoner(name=summoner_name, region=region)
 
     if not s.exists:
         return HttpResponse("Summoner does not exist", status=404)
@@ -681,8 +680,9 @@ def get_current_match_details(s, region, champion_id):
             'division': league.division.value,
             'points': league.league_points
         }
-        if league.promos != None:
+        if league.promos is not None:
             q[league.queue.value]['promos'] = league.promos.progress
+            q[league.queue.value]['notPlayed'] = league.promos.not_played
 
     # summoner stats for past 20 matches on a champion
     stats = {
@@ -804,11 +804,11 @@ def get_current_match_details_by_id(request):
     region = normalize_region(request.GET['region'])
     champion_id = int(request.GET['champion_id'])
     try:
-        summoner_name = request.GET['summoner_name']
-        s = cass.get_summoner(name=summoner_name, region=region)
-    except:
         summoner_id = request.GET['summoner_id']
         s = cass.get_summoner(id=summoner_id, region=region)
+    except:
+        summoner_name = request.GET['summoner_name']
+        s = cass.get_summoner(name=summoner_name, region=region)
 
     if not s.exists:
         return HttpResponse("Summoner does not exist", status=404)
