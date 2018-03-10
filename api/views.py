@@ -728,6 +728,7 @@ def get_current_match_details(s, region, champion_id):
             stats["losses"] += 1
             match_history.append(0)
 
+        dur = match.duration.seconds
         if dur > 10 * 60:
             gold10 += user.timeline.gold_per_min_deltas['0-10'] * 10
             cs10 += user.timeline.creeps_per_min_deltas['0-10'] * 10
