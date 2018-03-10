@@ -642,7 +642,6 @@ def get_current_match(request):
 def load_match(match):
     try:
         match.load()
-        match.timeline.load()
     except Exception as e:
         log.warn("Failed to load match", e, stack_info=True)
 
@@ -729,20 +728,18 @@ def get_current_match_details(s, region, champion_id):
             stats["losses"] += 1
             match_history.append(0)
 
-        try:
-            cs10 += match.timeline.frames[10].participant_frames[user.id].creep_score
-            gold10 += match.timeline.frames[10].participant_frames[user.id].gold_earned
+        if dur > 10 * 60:
+            gold10 += user.timeline.gold_per_min_deltas['0-10'] * 10
+            cs10 += user.timeline.creeps_per_min_deltas['0-10'] * 10
             games10 += 1
-
-            cs20 += match.timeline.frames[20].participant_frames[user.id].creep_score
-            gold20 += match.timeline.frames[20].participant_frames[user.id].gold_earned
+        if dur > 20 * 60:
+            gold20 += (user.timeline.gold_per_min_deltas['0-10'] + user.timeline.gold_per_min_deltas['10-20']) * 10
+            cs20 += (user.timeline.creeps_per_min_deltas['0-10'] + user.timeline.creeps_per_min_deltas['10-20']) * 10
             games20 += 1
-
-            cs30 += match.timeline.frames[30].participant_frames[user.id].creep_score
-            gold30 += match.timeline.frames[30].participant_frames[user.id].gold_earned
+        if dur > 30 * 60:
+            gold30 += (user.timeline.gold_per_min_deltas['0-10'] + user.timeline.gold_per_min_deltas['10-20'] + user.timeline.gold_per_min_deltas['20-30']) * 10
+            cs30 += (user.timeline.creeps_per_min_deltas['0-10'] + user.timeline.creeps_per_min_deltas['10-20'] + user.timeline.creeps_per_min_deltas['20-30']) * 10
             games30 += 1
-        except:
-            pass
 
     stats["kills"] /= 10
     stats["deaths"] /= 10
