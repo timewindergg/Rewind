@@ -712,7 +712,7 @@ def get_current_match_details(s, region, champion_id):
     for match in matchlist:
         participants = match.participants
         for participant in participants:
-            if participant.summoner.id == s.id and hasattr(participant, "timeline"):
+            if participant.summoner.id == s.id:
                 user = participant
                 break
 
