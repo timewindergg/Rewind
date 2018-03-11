@@ -709,41 +709,45 @@ def get_current_match_details(s, region, champion_id):
     gold10 = 0
     gold20 = 0
     gold30 = 0
+    match_count = 0
     for match in matchlist:
-        participants = match.participants
-        for participant in participants:
-            if participant.summoner.id == s.id:
-                user = participant
-                break
+        if (match.region.value == region):
+            match_count += 1
 
-        stats["kills"] += user.stats.kills
-        stats["deaths"] += user.stats.deaths
-        stats["assists"] += user.stats.assists
-        stats["totalCs"] += user.stats.total_minions_killed
+            participants = match.participants
+            for participant in participants:
+                if participant.summoner.id == s.id:
+                    user = participant
+                    break
 
-        if user.stats.win:
-            stats["wins"] += 1
-            match_history.append(1)
-        else:
-            stats["losses"] += 1
-            match_history.append(0)
+            stats["kills"] += user.stats.kills
+            stats["deaths"] += user.stats.deaths
+            stats["assists"] += user.stats.assists
+            stats["totalCs"] += user.stats.total_minions_killed
 
-        dur = match.duration.seconds
-        try:
-            if dur > 10 * 60:
-                gold10 += user.timeline.gold_per_min_deltas['0-10'] * 10
-                cs10 += user.timeline.creeps_per_min_deltas['0-10'] * 10
-                games10 += 1
-            if dur > 20 * 60:
-                gold20 += (user.timeline.gold_per_min_deltas['0-10'] + user.timeline.gold_per_min_deltas['10-20']) * 10
-                cs20 += (user.timeline.creeps_per_min_deltas['0-10'] + user.timeline.creeps_per_min_deltas['10-20']) * 10
-                games20 += 1
-            if dur > 30 * 60:
-                gold30 += (user.timeline.gold_per_min_deltas['0-10'] + user.timeline.gold_per_min_deltas['10-20'] + user.timeline.gold_per_min_deltas['20-30']) * 10
-                cs30 += (user.timeline.creeps_per_min_deltas['0-10'] + user.timeline.creeps_per_min_deltas['10-20'] + user.timeline.creeps_per_min_deltas['20-30']) * 10
-                games30 += 1
-        except:
-            log.warn('user timeline data does not exist', match.id)
+            if user.stats.win:
+                stats["wins"] += 1
+                match_history.append(1)
+            else:
+                stats["losses"] += 1
+                match_history.append(0)
+
+            dur = match.duration.seconds
+            try:
+                if dur > 10 * 60:
+                    gold10 += user.timeline.gold_per_min_deltas['0-10'] * 10
+                    cs10 += user.timeline.creeps_per_min_deltas['0-10'] * 10
+                    games10 += 1
+                if dur > 20 * 60:
+                    gold20 += (user.timeline.gold_per_min_deltas['0-10'] + user.timeline.gold_per_min_deltas['10-20']) * 10
+                    cs20 += (user.timeline.creeps_per_min_deltas['0-10'] + user.timeline.creeps_per_min_deltas['10-20']) * 10
+                    games20 += 1
+                if dur > 30 * 60:
+                    gold30 += (user.timeline.gold_per_min_deltas['0-10'] + user.timeline.gold_per_min_deltas['10-20'] + user.timeline.gold_per_min_deltas['20-30']) * 10
+                    cs30 += (user.timeline.creeps_per_min_deltas['0-10'] + user.timeline.creeps_per_min_deltas['10-20'] + user.timeline.creeps_per_min_deltas['20-30']) * 10
+                    games30 += 1
+            except:
+                log.warn('user timeline data does not exist', match.id)
 
     stats["kills"] /= 10
     stats["deaths"] /= 10
@@ -768,7 +772,7 @@ def get_current_match_details(s, region, champion_id):
     all_items = {}
 
     # get recommended build
-    if len(matchlist) > 0:
+    if match_count > 0:
         try:
             champ_items = ChampionItems.objects.get(champ_id=user.champion.id)
             items_blob = ujson.loads(champ_items.item_blob)
