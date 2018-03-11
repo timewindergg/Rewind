@@ -45,10 +45,10 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
                     updated = True
                     break
 
-                batch.append(match.id)
+                if (match.region.value == region):
+                    batch.append(match.id)
 
                 if len(batch) == Consts.AGGREGATION_BATCH_SIZE:
-                    
                     aggregate_batched_matches.delay(batch, region, summoner_id)
                     batch = []
                 count += 1
