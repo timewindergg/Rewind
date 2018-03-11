@@ -137,4 +137,5 @@ STATICFILES_DIRS = [
     os.path.join(PROJECT_ROOT, "static/roles"),
     os.path.join(PROJECT_ROOT, "static/masteries"),
     os.path.join(PROJECT_ROOT, "static/tiers")
+    os.path.join(PROJECT_ROOT, "static/scoreboard")
 ]
