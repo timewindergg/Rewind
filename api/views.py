@@ -729,18 +729,21 @@ def get_current_match_details(s, region, champion_id):
             match_history.append(0)
 
         dur = match.duration.seconds
-        if dur > 10 * 60:
-            gold10 += user.timeline.gold_per_min_deltas['0-10'] * 10
-            cs10 += user.timeline.creeps_per_min_deltas['0-10'] * 10
-            games10 += 1
-        if dur > 20 * 60:
-            gold20 += (user.timeline.gold_per_min_deltas['0-10'] + user.timeline.gold_per_min_deltas['10-20']) * 10
-            cs20 += (user.timeline.creeps_per_min_deltas['0-10'] + user.timeline.creeps_per_min_deltas['10-20']) * 10
-            games20 += 1
-        if dur > 30 * 60:
-            gold30 += (user.timeline.gold_per_min_deltas['0-10'] + user.timeline.gold_per_min_deltas['10-20'] + user.timeline.gold_per_min_deltas['20-30']) * 10
-            cs30 += (user.timeline.creeps_per_min_deltas['0-10'] + user.timeline.creeps_per_min_deltas['10-20'] + user.timeline.creeps_per_min_deltas['20-30']) * 10
-            games30 += 1
+        try:
+            if dur > 10 * 60:
+                gold10 += user.timeline.gold_per_min_deltas['0-10'] * 10
+                cs10 += user.timeline.creeps_per_min_deltas['0-10'] * 10
+                games10 += 1
+            if dur > 20 * 60:
+                gold20 += (user.timeline.gold_per_min_deltas['0-10'] + user.timeline.gold_per_min_deltas['10-20']) * 10
+                cs20 += (user.timeline.creeps_per_min_deltas['0-10'] + user.timeline.creeps_per_min_deltas['10-20']) * 10
+                games20 += 1
+            if dur > 30 * 60:
+                gold30 += (user.timeline.gold_per_min_deltas['0-10'] + user.timeline.gold_per_min_deltas['10-20'] + user.timeline.gold_per_min_deltas['20-30']) * 10
+                cs30 += (user.timeline.creeps_per_min_deltas['0-10'] + user.timeline.creeps_per_min_deltas['10-20'] + user.timeline.creeps_per_min_deltas['20-30']) * 10
+                games30 += 1
+        except:
+            log.warn('user timeline data does not exist', match.id)
 
     stats["kills"] /= 10
     stats["deaths"] /= 10
