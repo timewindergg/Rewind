@@ -34,7 +34,7 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
         count = 0
 
         while True:
-            if updated or index >= max_aggregations and max_aggregations > 0:
+            if updated or index >= max_aggregations and max_aggregations > 0 or count >= max_aggregations:
                 break
 
             recent_matches = cass.get_match_history(summoner=summoner, begin_index=index, end_index=index+100, seasons=[cass.data.Season.from_id(11)])
@@ -51,7 +51,11 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
                 if len(batch) == Consts.AGGREGATION_BATCH_SIZE:
                     aggregate_batched_matches.delay(batch, region, summoner_id)
                     batch = []
+
                 count += 1
+
+                if count >= max_aggregations:
+                    break
 
             index += 100
 
