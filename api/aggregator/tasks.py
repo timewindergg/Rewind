@@ -168,7 +168,7 @@ def aggregate_user_matches(matchlist, summoner_id, region):
         #
         # MatchLawn
         #
-        date = str(datetime.datetime.fromtimestamp(match.creation.timestamp).date()) 
+        date = str(datetime.datetime.utcfromtimestamp(match.creation.timestamp).date()) 
         if not date in lawn_data:
             lawn_data[date] = {
                 'wins': 0,
