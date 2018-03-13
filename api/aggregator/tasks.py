@@ -216,6 +216,7 @@ def aggregate_user_matches(matchlist, summoner_id, region):
         match_data['item6'] = items[6]
         match_data['spell0'] = user.summoner_spell_d.id
         match_data['spell1'] = user.summoner_spell_f.id
+        match_data['kills'] = user.stats.kills
         match_data['deaths'] = user.stats.deaths
         match_data['assists'] = user.stats.assists
         match_data['cs'] = user.stats.total_minions_killed
@@ -519,6 +520,7 @@ def create_matches(summoner_id, region, data):
                 item6=match_data['item6'],
                 spell0=match_data['spell0'],
                 spell1=match_data['spell1'],
+                kills=match_data['kills'],
                 deaths=match_data['deaths'],
                 assists=match_data['assists'],
                 cs=match_data['cs'],
