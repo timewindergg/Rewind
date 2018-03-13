@@ -77,7 +77,7 @@ def aggregate_batched_matches(batch, region, summoner_id):
         # init
         cass.get_realms(region=region).load()
 
-        old = time.time() * 1000
+        #old = time.time() * 1000
 
         matchlist = []
         for m_id in batch:
@@ -88,11 +88,11 @@ def aggregate_batched_matches(batch, region, summoner_id):
         pool.map(load_match, matchlist)
         pool.close()
         pool.join()
-        print("fetch:", time.time()*1000 - old)
+        #print("fetch:", time.time()*1000 - old)
 
-        old = time.time() * 1000
+        #old = time.time() * 1000
         aggregate_user_matches(matchlist, summoner_id, region)
-        print("total:", time.time()*1000 - old)
+        #print("total:", time.time()*1000 - old)
 
     except Exception as e:
         if pool is not None:
@@ -416,7 +416,7 @@ def aggregate_user_matches(matchlist, summoner_id, region):
 
 @shared_task()
 def update_userchampionstats(summoner_id, region, data):
-    t = time.time() * 1000
+    #t = time.time() * 1000
     for champ_data in data:
         with transaction.atomic():
             ucs, created = UserChampionStats.objects.select_for_update().get_or_create(
@@ -490,13 +490,13 @@ def update_userchampionstats(summoner_id, region, data):
                     ucs.dmg_taken_diff30 = (ucs.dmg_taken_diff30 * ucs.total_games + champ_data['ddpmd30']) / (ucs.total_games + 1)
             ucs.total_games += 1
             ucs.save()
-    print("ucs:", time.time() *1000 - t)
+    #print("ucs:", time.time() *1000 - t)
 
 
 @shared_task()
 def create_matches(summoner_id, region, data):
     try:
-        t = time.time() * 1000
+        #t = time.time() * 1000
         matches = []
         data_items = data.items()
         for m_id, match_data in data_items:
@@ -541,7 +541,7 @@ def create_matches(summoner_id, region, data):
             matches.append(m)
 
         Matches.objects.bulk_create(matches)
-        print("m:", time.time() *1000 - t)
+        #print("m:", time.time() *1000 - t)
     except Exception as e:
         log.warn("Could not bulk create matches", e, stack_info=True)
         return
@@ -549,7 +549,7 @@ def create_matches(summoner_id, region, data):
 
 @shared_task()
 def update_global_items(data):
-    t = time.time() * 1000
+    #t = time.time() * 1000
     with transaction.atomic():
         for champ_id, items in data.items():
             champ_item, created = ChampionItems.objects.select_for_update().get_or_create(
@@ -564,12 +564,12 @@ def update_global_items(data):
             new_data = ujson.dumps(cur_data)
             champ_item.item_blob = new_data
             champ_item.save()
-    print("ugi:", time.time() *1000 - t)
+    #print("ugi:", time.time() *1000 - t)
 
 
 @shared_task()
 def update_items(summoner_id, region, data):
-    t = time.time() * 1000
+    #t = time.time() * 1000
     with transaction.atomic():
         for champ_id, lanes in data.items():
             for lane, items in lanes.items():
@@ -588,12 +588,12 @@ def update_items(summoner_id, region, data):
                 new_data = ujson.dumps(cur_data)
                 uci.item_blob = new_data
                 uci.save()
-    print("ui:", time.time() *1000 - t)
+    #print("ui:", time.time() *1000 - t)
 
 
 @shared_task()
 def update_spells(summoner_id, region, data):
-    t = time.time() * 1000
+    #t = time.time() * 1000
     with transaction.atomic():
         for champ_id, lanes in data.items():
             for lane, sum_strings in lanes.items():
@@ -608,11 +608,11 @@ def update_spells(summoner_id, region, data):
                     )
                     ucs.occurence = F('occurence') + occurence
                     ucs.save()
-    print("us:", time.time() *1000 - t)
+    #print("us:", time.time() *1000 - t)
 
 @shared_task()
 def update_runes(summoner_id, region, data):
-    t = time.time() * 1000
+    #t = time.time() * 1000
     with transaction.atomic():
         for champ_id, lanes in data.items():
             for lane, rune_strings in lanes.items():
@@ -627,11 +627,11 @@ def update_runes(summoner_id, region, data):
                     )
                     ucr.occurence = F('occurence') + occurence
                     ucr.save()
-    print("ur:", time.time() *1000 - t)
+    #print("ur:", time.time() *1000 - t)
 
 @shared_task()
 def update_userchampionversus(summoner_id, region, data):
-    t = time.time() * 1000
+    #t = time.time() * 1000
     with transaction.atomic():
         for champ_id, enemies_data in data.items():
             championv, created = UserChampionVersusStats.objects.select_for_update().get_or_create(
@@ -651,11 +651,11 @@ def update_userchampionversus(summoner_id, region, data):
             new_data = ujson.dumps(cur_data)
             championv.versus_blob = new_data
             championv.save()
-    print("ucv:", time.time() *1000 - t)
+    #print("ucv:", time.time() *1000 - t)
 
 @shared_task()
 def update_matchlawn(summoner_id, region, data):
-    t = time.time() * 1000
+    #t = time.time() * 1000
     for date, stats in data.items():
         lawn, created = MatchLawn.objects.get_or_create(
             user_id=summoner_id,
@@ -669,11 +669,11 @@ def update_matchlawn(summoner_id, region, data):
         lawn.wins = F('wins') + stats['wins']
         lawn.losses = F('losses') + stats['losses']
         lawn.save()
-    print("ml:", time.time() *1000 - t)
+    #print("ml:", time.time() *1000 - t)
 
 @shared_task()
 def update_profile(summoner_id, region, data):
-    t = time.time() * 1000
+    #t = time.time() * 1000
     try:
         profile = ProfileStats.objects.get(user_id=summoner_id, region=region)
         profile.wins = F('wins') + data['wins']
@@ -685,4 +685,4 @@ def update_profile(summoner_id, region, data):
     except Exception as e:
         log.error("Summoner not created in database")
         raise e
-    print("p:", time.time() *1000 - t)
+    #print("p:", time.time() *1000 - t)
