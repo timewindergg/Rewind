@@ -281,35 +281,38 @@ def aggregate_user_matches(matchlist, summoner_id, region):
             champ_stats['total_games40'] = 1
         elif match.duration.seconds > 40 * 60:
             champ_stats['total_games40p'] = 1
-        has_diffs = hasattr(user.timeline, 'cs_diff_per_min_deltas')
-        champ_stats['has_diffs'] = has_diffs
-        if match.duration.seconds > 10 * 60:
-            champ_stats['gpmd10'] = user.timeline.gold_per_min_deltas['0-10']
-            champ_stats['cpmd10'] = user.timeline.creeps_per_min_deltas['0-10']
-            champ_stats['xpmd10'] = user.timeline.xp_per_min_deltas['0-10']
-            champ_stats['dpmd10'] = user.timeline.damage_taken_per_min_deltas['0-10']
-            if has_diffs:
-                champ_stats['cdpmd10'] = user.timeline.cs_diff_per_min_deltas['0-10']
-                champ_stats['xdpmd10'] = user.timeline.xp_diff_per_min_deltas['0-10']
-                champ_stats['ddpmd10'] = user.timeline.damage_taken_diff_per_min_deltas['0-10']
-        if match.duration.seconds > 20 * 60:
-            champ_stats['gpmd20'] = user.timeline.gold_per_min_deltas['10-20']
-            champ_stats['cpmd20'] = user.timeline.creeps_per_min_deltas['10-20']
-            champ_stats['xpmd20'] = user.timeline.xp_per_min_deltas['10-20']
-            champ_stats['dpmd20'] = user.timeline.damage_taken_per_min_deltas['10-20']
-            if has_diffs:
-                champ_stats['cdpmd20'] = user.timeline.cs_diff_per_min_deltas['10-20']
-                champ_stats['xdpmd20'] = user.timeline.xp_diff_per_min_deltas['10-20']
-                champ_stats['ddpmd20'] = user.timeline.damage_taken_diff_per_min_deltas['10-20']
-        if match.duration.seconds > 30 * 60:
-            champ_stats['gpmd30'] = user.timeline.gold_per_min_deltas['20-30']
-            champ_stats['cpmd30'] = user.timeline.creeps_per_min_deltas['20-30']
-            champ_stats['xpmd30'] = user.timeline.xp_per_min_deltas['20-30']
-            champ_stats['dpmd30'] = user.timeline.damage_taken_per_min_deltas['20-30']
-            if has_diffs:
-                champ_stats['cdpmd30'] = user.timeline.cs_diff_per_min_deltas['20-30']
-                champ_stats['xdpmd30'] = user.timeline.xp_diff_per_min_deltas['20-30']
-                champ_stats['ddpmd30'] = user.timeline.damage_taken_diff_per_min_deltas['20-30']
+        try:
+            has_diffs = hasattr(user.timeline, 'cs_diff_per_min_deltas')
+            champ_stats['has_diffs'] = has_diffs
+            if match.duration.seconds > 10 * 60:
+                champ_stats['gpmd10'] = user.timeline.gold_per_min_deltas['0-10']
+                champ_stats['cpmd10'] = user.timeline.creeps_per_min_deltas['0-10']
+                champ_stats['xpmd10'] = user.timeline.xp_per_min_deltas['0-10']
+                champ_stats['dpmd10'] = user.timeline.damage_taken_per_min_deltas['0-10']
+                if has_diffs:
+                    champ_stats['cdpmd10'] = user.timeline.cs_diff_per_min_deltas['0-10']
+                    champ_stats['xdpmd10'] = user.timeline.xp_diff_per_min_deltas['0-10']
+                    champ_stats['ddpmd10'] = user.timeline.damage_taken_diff_per_min_deltas['0-10']
+            if match.duration.seconds > 20 * 60:
+                champ_stats['gpmd20'] = user.timeline.gold_per_min_deltas['10-20']
+                champ_stats['cpmd20'] = user.timeline.creeps_per_min_deltas['10-20']
+                champ_stats['xpmd20'] = user.timeline.xp_per_min_deltas['10-20']
+                champ_stats['dpmd20'] = user.timeline.damage_taken_per_min_deltas['10-20']
+                if has_diffs:
+                    champ_stats['cdpmd20'] = user.timeline.cs_diff_per_min_deltas['10-20']
+                    champ_stats['xdpmd20'] = user.timeline.xp_diff_per_min_deltas['10-20']
+                    champ_stats['ddpmd20'] = user.timeline.damage_taken_diff_per_min_deltas['10-20']
+            if match.duration.seconds > 30 * 60:
+                champ_stats['gpmd30'] = user.timeline.gold_per_min_deltas['20-30']
+                champ_stats['cpmd30'] = user.timeline.creeps_per_min_deltas['20-30']
+                champ_stats['xpmd30'] = user.timeline.xp_per_min_deltas['20-30']
+                champ_stats['dpmd30'] = user.timeline.damage_taken_per_min_deltas['20-30']
+                if has_diffs:
+                    champ_stats['cdpmd30'] = user.timeline.cs_diff_per_min_deltas['20-30']
+                    champ_stats['xdpmd30'] = user.timeline.xp_diff_per_min_deltas['20-30']
+                    champ_stats['ddpmd30'] = user.timeline.damage_taken_diff_per_min_deltas['20-30']
+        except:
+            pass
         champion_data.append(champ_stats)       
 
 
@@ -461,34 +464,37 @@ def update_userchampionstats(summoner_id, region, data):
                 ucs.total_games40 += champ_data['total_games40']
             elif dur > 40 * 60:
                 ucs.total_games40p += champ_data['total_games40p']
-            has_diffs = champ_data['has_diffs']
-            if dur > 10 * 60:
-                ucs.gold10 = (ucs.gold10 * ucs.total_games + champ_data['gpmd10']) / (ucs.total_games + 1)
-                ucs.cs10 = (ucs.cs10 * ucs.total_games + champ_data['cpmd10']) / (ucs.total_games + 1)
-                ucs.xp10 = (ucs.xp10 * ucs.total_games + champ_data['xpmd10']) / (ucs.total_games + 1)
-                ucs.dmg_taken10 = (ucs.dmg_taken10 * ucs.total_games + champ_data['dpmd10']) / (ucs.total_games + 1)
-                if has_diffs:
-                    ucs.cs_diff10 = (ucs.cs_diff10 * ucs.total_games + champ_data['cdpmd10']) / (ucs.total_games + 1)
-                    ucs.xp_diff10 = (ucs.xp_diff10 * ucs.total_games + champ_data['xdpmd10']) / (ucs.total_games + 1)
-                    ucs.dmg_taken_diff10 = (ucs.dmg_taken_diff10 * ucs.total_games + champ_data['ddpmd10']) / (ucs.total_games + 1)
-            if dur > 20 * 60:
-                ucs.gold20 = (ucs.gold20 * ucs.total_games + champ_data['gpmd20']) / (ucs.total_games + 1)
-                ucs.cs20 = (ucs.cs20 * ucs.total_games + champ_data['cpmd20']) / (ucs.total_games + 1)
-                ucs.xp20 = (ucs.xp20 * ucs.total_games + champ_data['xpmd20']) / (ucs.total_games + 1)
-                ucs.dmg_taken20 = (ucs.dmg_taken20 * ucs.total_games + champ_data['dpmd20']) / (ucs.total_games + 1)
-                if has_diffs:
-                    ucs.cs_diff20 = (ucs.cs_diff20 * ucs.total_games + champ_data['cdpmd20']) / (ucs.total_games + 1)
-                    ucs.xp_diff20 = (ucs.xp_diff20 * ucs.total_games + champ_data['xdpmd20']) / (ucs.total_games + 1)
-                    ucs.dmg_taken_diff20 = (ucs.dmg_taken_diff20 * ucs.total_games + champ_data['ddpmd20']) / (ucs.total_games + 1)
-            if dur > 30 * 60:
-                ucs.gold30 = (ucs.gold30 * ucs.total_games + champ_data['gpmd30']) / (ucs.total_games + 1)
-                ucs.cs30 = (ucs.cs30 * ucs.total_games + champ_data['cpmd30']) / (ucs.total_games + 1)
-                ucs.xp30 = (ucs.xp30 * ucs.total_games + champ_data['xpmd30']) / (ucs.total_games + 1)
-                ucs.dmg_taken30 = (ucs.dmg_taken30 * ucs.total_games + champ_data['dpmd30']) / (ucs.total_games + 1)
-                if has_diffs:
-                    ucs.cs_diff30 = (ucs.cs_diff30 * ucs.total_games + champ_data['cdpmd30']) / (ucs.total_games + 1)
-                    ucs.xp_diff30 = (ucs.xp_diff30 * ucs.total_games + champ_data['xdpmd30']) / (ucs.total_games + 1)
-                    ucs.dmg_taken_diff30 = (ucs.dmg_taken_diff30 * ucs.total_games + champ_data['ddpmd30']) / (ucs.total_games + 1)
+            try:
+                has_diffs = champ_data['has_diffs']
+                if dur > 10 * 60:
+                    ucs.gold10 = (ucs.gold10 * ucs.total_games + champ_data['gpmd10']) / (ucs.total_games + 1)
+                    ucs.cs10 = (ucs.cs10 * ucs.total_games + champ_data['cpmd10']) / (ucs.total_games + 1)
+                    ucs.xp10 = (ucs.xp10 * ucs.total_games + champ_data['xpmd10']) / (ucs.total_games + 1)
+                    ucs.dmg_taken10 = (ucs.dmg_taken10 * ucs.total_games + champ_data['dpmd10']) / (ucs.total_games + 1)
+                    if has_diffs:
+                        ucs.cs_diff10 = (ucs.cs_diff10 * ucs.total_games + champ_data['cdpmd10']) / (ucs.total_games + 1)
+                        ucs.xp_diff10 = (ucs.xp_diff10 * ucs.total_games + champ_data['xdpmd10']) / (ucs.total_games + 1)
+                        ucs.dmg_taken_diff10 = (ucs.dmg_taken_diff10 * ucs.total_games + champ_data['ddpmd10']) / (ucs.total_games + 1)
+                if dur > 20 * 60:
+                    ucs.gold20 = (ucs.gold20 * ucs.total_games + champ_data['gpmd20']) / (ucs.total_games + 1)
+                    ucs.cs20 = (ucs.cs20 * ucs.total_games + champ_data['cpmd20']) / (ucs.total_games + 1)
+                    ucs.xp20 = (ucs.xp20 * ucs.total_games + champ_data['xpmd20']) / (ucs.total_games + 1)
+                    ucs.dmg_taken20 = (ucs.dmg_taken20 * ucs.total_games + champ_data['dpmd20']) / (ucs.total_games + 1)
+                    if has_diffs:
+                        ucs.cs_diff20 = (ucs.cs_diff20 * ucs.total_games + champ_data['cdpmd20']) / (ucs.total_games + 1)
+                        ucs.xp_diff20 = (ucs.xp_diff20 * ucs.total_games + champ_data['xdpmd20']) / (ucs.total_games + 1)
+                        ucs.dmg_taken_diff20 = (ucs.dmg_taken_diff20 * ucs.total_games + champ_data['ddpmd20']) / (ucs.total_games + 1)
+                if dur > 30 * 60:
+                    ucs.gold30 = (ucs.gold30 * ucs.total_games + champ_data['gpmd30']) / (ucs.total_games + 1)
+                    ucs.cs30 = (ucs.cs30 * ucs.total_games + champ_data['cpmd30']) / (ucs.total_games + 1)
+                    ucs.xp30 = (ucs.xp30 * ucs.total_games + champ_data['xpmd30']) / (ucs.total_games + 1)
+                    ucs.dmg_taken30 = (ucs.dmg_taken30 * ucs.total_games + champ_data['dpmd30']) / (ucs.total_games + 1)
+                    if has_diffs:
+                        ucs.cs_diff30 = (ucs.cs_diff30 * ucs.total_games + champ_data['cdpmd30']) / (ucs.total_games + 1)
+                        ucs.xp_diff30 = (ucs.xp_diff30 * ucs.total_games + champ_data['xdpmd30']) / (ucs.total_games + 1)
+                        ucs.dmg_taken_diff30 = (ucs.dmg_taken_diff30 * ucs.total_games + champ_data['ddpmd30']) / (ucs.total_games + 1)
+            except:
+                pass
             ucs.total_games += 1
             ucs.save()
     #print("ucs:", time.time() *1000 - t)
