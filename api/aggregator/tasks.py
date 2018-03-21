@@ -41,7 +41,7 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
 
             batch = []
             for match in recent_matches:
-                if profile.last_match_updated == match.id:
+                if profile.last_match_updated == match.creation.timestamp:
                     updated = True
                     break
 
@@ -161,8 +161,8 @@ def aggregate_user_matches(matchlist, summoner_id, region):
         # ProfileStats
         #
         profile_data['time_played'] += match.duration.total_seconds()
-        if profile_data['last_match_updated'] < match.id:
-            profile_data['last_match_updated'] = match.id
+        if profile_data['last_match_updated'] < match.creation.timestamp:
+            profile_data['last_match_updated'] = match.creation.timestamp
         if user.stats.win:
             profile_data['wins'] += 1
         else:
