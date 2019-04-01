@@ -63,6 +63,7 @@ full_items = [
     3116, # Rylai's Crystal Scepter
     3382, # Salvation
     3040, # Seraph's Embrace
+    3161, # Spear of Shojin
     3065, # Spirit Visage
     3087, # Statikk Shiv
     3053, # Sterak's Gage

@@ -3,7 +3,7 @@ import cassiopeia as cass
 from cassiopeia import Champion
 
 from pprint import pprint
-from urllib.request import urlopen
+from urllib.request import urlopen, Request
 import json
 import os
 
@@ -22,8 +22,11 @@ def update_champions():
         print("Updating %d of %d..." % (i+1, total_champions), end='')
 
         champion_url = "http://api.champion.gg/v2/champions/%d?champData=hashes,matchups&api_key=%s" % (champion.id, KEY)
-        response = urlopen(champion_url)
-        dictionary = json.load(response)
+        print(champion_url)
+        req = Request(champion_url, headers={'User-Agent' : "Magic Browser"})
+        con = urlopen(req)
+        response = con.read().decode('utf-8')
+        dictionary = json.loads(response)
 
         for role in dictionary:
             champ_id = role['_id']['championId']

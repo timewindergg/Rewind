@@ -17,6 +17,7 @@ from api import consts as Consts
 import logging
 log = logging.getLogger(__name__)
 
+BATCH_SIZE = 10
 
 @shared_task(retry_backoff=True, max_retries=3)
 def aggregate_users(summoner_id, region, max_aggregations=-1):
@@ -24,7 +25,7 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
         # init
         cass.get_realms(region=region).load()
 
-        summoner_id = int(summoner_id)
+        summoner_id = summoner_id
         max_aggregations = int(max_aggregations)
         profile = ProfileStats.objects.get(user_id=summoner_id, region=region)
         summoner = cass.get_summoner(id=summoner_id, region=region)
@@ -37,7 +38,7 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
             if updated or index >= max_aggregations and max_aggregations > 0 or count >= max_aggregations:
                 break
 
-            recent_matches = cass.get_match_history(summoner=summoner, begin_index=index, end_index=index+100, seasons=[cass.data.Season.from_id(11)])
+            recent_matches = cass.get_match_history(summoner=summoner, begin_index=index, end_index=index+BATCH_SIZE, seasons=[cass.data.Season.from_id(13)])
 
             batch = []
             for match in recent_matches:
@@ -57,7 +58,7 @@ def aggregate_users(summoner_id, region, max_aggregations=-1):
                 if count >= max_aggregations:
                     break
 
-            index += 100
+            index += BATCH_SIZE
 
             if len(batch) > 0:
                 aggregate_batched_matches.delay(batch, region, summoner_id)

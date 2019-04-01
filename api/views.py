@@ -29,14 +29,13 @@ log = logging.getLogger(__name__)
 
 cass.apply_settings({
   "global": {
+    "version_from_match": "patch",
     "default_region": None
   },
 
   "pipeline": {
     "Cache": {
       "expirations": {
-        "ChampionStatusData": 0,
-        "ChampionStatusListData": 0,
         "Realms": datetime.timedelta(hours=6),
         "Versions": datetime.timedelta(hours=6),
         "Champion": 0,
@@ -71,7 +70,7 @@ cass.apply_settings({
     "DDragon": {},
 
     "RiotAPI": {
-      "api_key": os.environ["RIOT_API_KEY"],
+      "api_key": os.environ['RIOT_API_KEY'],
       "request_error_handling": {
         "404": {
           "strategy": "throw"
@@ -174,7 +173,7 @@ def get_static_data(request, region):
         for rune in runes:
             rune_response = {}
             rune_response['name'] = rune.name
-            rune_response['path'] = rune.path.value
+            rune_response['path'] = rune.path.name
             rune_response['shortDescription'] = rune._data[cass.core.staticdata.rune.RuneData].shortDescription #rune.short_description
             rune_response['isKeystone'] = rune.is_keystone
             runes_response[str(rune.id)] = rune_response

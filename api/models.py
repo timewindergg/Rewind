@@ -48,7 +48,7 @@ class ChampionRunes(models.Model):
 
 
 class UserChampionItems(models.Model):
-    user_id = models.IntegerField()
+    user_id = models.CharField(max_length=47)
     region = models.CharField(max_length=10)
     champ_id = models.IntegerField()
     lane = models.CharField(max_length=50)
@@ -59,7 +59,7 @@ class UserChampionItems(models.Model):
 
 
 class UserChampionRunes(models.Model):
-    user_id = models.IntegerField()
+    user_id = models.CharField(max_length=47)
     region = models.CharField(max_length=10)
     champ_id = models.IntegerField()
     lane = models.CharField(max_length=50)
@@ -71,7 +71,7 @@ class UserChampionRunes(models.Model):
 
 
 class UserChampionMasteries(models.Model):
-    user_id = models.IntegerField()
+    user_id = models.CharField(max_length=47)
     region = models.CharField(max_length=10)
     champ_id = models.IntegerField()
     level = models.IntegerField(default=0)
@@ -85,7 +85,7 @@ class UserChampionMasteries(models.Model):
 
 
 class UserChampionSummoners(models.Model):
-    user_id = models.IntegerField()
+    user_id = models.CharField(max_length=47)
     region = models.CharField(max_length=10)
     champ_id = models.IntegerField()
     lane = models.CharField(max_length=50)
@@ -97,7 +97,7 @@ class UserChampionSummoners(models.Model):
 
 
 class UserChampionVersusStats(models.Model):
-    user_id = models.IntegerField()
+    user_id = models.CharField(max_length=47)
     region = models.CharField(max_length=10)
     champ_id = models.IntegerField()
     versus_blob = models.TextField(default="{}")
@@ -106,7 +106,7 @@ class UserChampionVersusStats(models.Model):
         unique_together = (("user_id", "region", "champ_id"),)
 
 class UserChampionStats(models.Model):
-    user_id = models.IntegerField()
+    user_id = models.CharField(max_length=47)
     region = models.CharField(max_length=10)
     season_id = models.IntegerField()
     champ_id = models.IntegerField()
@@ -160,7 +160,7 @@ class UserChampionStats(models.Model):
 
 
 class UserLeagues(models.Model):
-    user_id = models.IntegerField()
+    user_id = models.CharField(max_length=47)
     region = models.CharField(max_length=10)
     queue = models.CharField(max_length=30)
     tier = models.CharField(max_length=20)
@@ -172,7 +172,7 @@ class UserLeagues(models.Model):
 
 
 class ProfileStats(models.Model):
-    user_id = models.IntegerField()
+    user_id = models.CharField(max_length=47)
     region = models.CharField(max_length=10)
     name = models.CharField(max_length=16)
     last_updated = models.IntegerField(default=0)
@@ -195,7 +195,7 @@ class Accolades(models.Model):
 
 
 class UserAccolades(models.Model):
-    user_id = models.IntegerField()
+    user_id = models.CharField(max_length=47)
     region = models.CharField(max_length=10)
     accolade_id = models.IntegerField()
     accolade_value = models.IntegerField()
@@ -205,7 +205,7 @@ class UserAccolades(models.Model):
 
 
 class MatchLawn(models.Model):
-    user_id = models.IntegerField()
+    user_id = models.CharField(max_length=47)
     region = models.CharField(max_length=10)
     date = models.TextField()
     wins = models.IntegerField(default=0)
@@ -216,7 +216,7 @@ class MatchLawn(models.Model):
 
 
 class Matches(models.Model):
-    user_id = models.IntegerField()
+    user_id = models.CharField(max_length=47)
     match_id = models.BigIntegerField()
     region = models.CharField(max_length=10)
     season_id = models.IntegerField(default=0)
