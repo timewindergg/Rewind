@@ -46,5 +46,9 @@ Heroku will automatically run a celery worker as specified in the Procfile.
 
 Test on http://localhost:8000/get_match_timeline/?region=NA&match_id=2650476106
 
+Deployment:
+screen -S server ./server.sh
+screen -S celery ./celery.sh
+
 
 
